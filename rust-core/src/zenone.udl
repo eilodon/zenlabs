@@ -1,0 +1,57 @@
+namespace zenone {
+};
+
+[Error]
+enum ZenOneError {
+    "PatternNotFound",
+    "SessionNotActive",
+};
+
+dictionary FfiBreathPattern {
+    string id;
+    string label;
+    string tag;
+    string description;
+    f32 inhale_sec;
+    f32 hold_in_sec;
+    f32 exhale_sec;
+    f32 hold_out_sec;
+    u32 recommended_cycles;
+    f32 arousal_impact;
+};
+
+enum FfiPhase {
+    "Inhale",
+    "HoldIn",
+    "Exhale",
+    "HoldOut",
+};
+
+dictionary FfiFrame {
+    FfiPhase phase;
+    f32 phase_progress;
+    u64 cycles_completed;
+    f32? heart_rate;
+    f32 signal_quality;
+};
+
+dictionary FfiSessionStats {
+    f32 duration_sec;
+    u64 cycles_completed;
+    string pattern_id;
+    f32? avg_heart_rate;
+};
+
+interface ZenOneRuntime {
+    constructor();
+    [Name=with_pattern]
+    constructor(string pattern_id);
+    
+    sequence<FfiBreathPattern> get_patterns();
+    boolean load_pattern(string pattern_id);
+    FfiFrame process_frame(f32 r, f32 g, f32 b, i64 timestamp_us);
+    void start_session();
+    FfiSessionStats stop_session();
+    boolean is_session_active();
+    string current_pattern_id();
+};
