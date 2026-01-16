@@ -1,7 +1,21 @@
-[workspace]
-members = ["src"]
-
-[workspace.package]
+[package]
+name = "zenone-ffi"
 version = "0.1.0"
 edition = "2021"
 license = "MIT"
+
+[lib]
+crate-type = ["cdylib", "staticlib"]
+name = "zenone"
+path = "lib.rs"
+
+[dependencies]
+# AGOLOS core crates (path to local checkout)
+zenb-core = { path = "../../AGOLOS/crates/zenb-core" }
+zenb-signals = { path = "../../AGOLOS/crates/zenb-signals" }
+
+# UniFFI for cross-platform bindings
+uniffi = { version = "0.28", features = ["cli"] }
+
+[build-dependencies]
+uniffi = { version = "0.28", features = ["build"] }
