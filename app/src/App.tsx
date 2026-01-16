@@ -35,14 +35,14 @@ function MainTabs() {
                 name="Breathe"
                 component={SessionScreen}
                 options={{
-                    tabBarIcon: ({ color }) => <Text style={{ fontSize: 20 }}>🧘</Text>,
+                    tabBarIcon: ({ color }: { color: string }) => <Text style={{ fontSize: 20 }}>🧘</Text>,
                 }}
             />
             <Tab.Screen
                 name="Settings"
                 component={SettingsScreen}
                 options={{
-                    tabBarIcon: ({ color }) => <Text style={{ fontSize: 20 }}>⚙️</Text>,
+                    tabBarIcon: ({ color }: { color: string }) => <Text style={{ fontSize: 20 }}>⚙️</Text>,
                 }}
             />
         </Tab.Navigator>
