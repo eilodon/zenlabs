@@ -1,5 +1,5 @@
 /**
- * Settings Screen
+ * Settings Screen (Upgraded with real state management)
  */
 
 import React from 'react';
@@ -8,10 +8,14 @@ import {
     Text,
     StyleSheet,
     SafeAreaView,
-    TouchableOpacity,
     Switch,
     ScrollView,
+    TouchableOpacity,
+    Alert,
 } from 'react-native';
+import { useSettingsStore } from '../stores/settingsStore';
+import { useCamera } from '../hooks/useCamera';
+import { WearableSettings, UserProfile } from '../components';
 
 interface SettingRowProps {
     label: string;
@@ -30,9 +34,35 @@ const SettingRow: React.FC<SettingRowProps> = ({ label, description, children })
 );
 
 export const SettingsScreen: React.FC = () => {
-    const [hapticEnabled, setHapticEnabled] = React.useState(true);
-    const [soundEnabled, setSoundEnabled] = React.useState(true);
-    const [cameraEnabled, setCameraEnabled] = React.useState(false);
+    const {
+        hapticEnabled,
+        soundEnabled,
+        cameraEnabled,
+        setHapticEnabled,
+        setSoundEnabled,
+        setCameraEnabled,
+    } = useSettingsStore();
+
+    // Camera for permission check
+    const camera = useCamera({ enabled: false });
+
+    const handleCameraToggle = async (value: boolean) => {
+        if (value) {
+            // Request permission first
+            if (camera.hasPermission === null || camera.hasPermission === false) {
+                const granted = await camera.requestPermission();
+                if (!granted) {
+                    Alert.alert(
+                        'Camera Permission Required',
+                        'Please enable camera access in Settings to use heart rate detection.',
+                        [{ text: 'OK' }]
+                    );
+                    return;
+                }
+            }
+        }
+        setCameraEnabled(value);
+    };
 
     return (
         <SafeAreaView style={styles.container}>
@@ -41,6 +71,9 @@ export const SettingsScreen: React.FC = () => {
             </View>
 
             <ScrollView style={styles.content}>
+                {/* User Profile */}
+                <UserProfile />
+
                 {/* Feedback Section */}
                 <Text style={styles.sectionTitle}>Feedback</Text>
 
@@ -51,7 +84,8 @@ export const SettingsScreen: React.FC = () => {
                     <Switch
                         value={hapticEnabled}
                         onValueChange={setHapticEnabled}
-                        trackColor={{ true: '#4ECDC4' }}
+                        trackColor={{ false: '#3A3A4E', true: '#4ECDC4' }}
+                        thumbColor={hapticEnabled ? '#fff' : '#888'}
                     />
                 </SettingRow>
 
@@ -62,7 +96,8 @@ export const SettingsScreen: React.FC = () => {
                     <Switch
                         value={soundEnabled}
                         onValueChange={setSoundEnabled}
-                        trackColor={{ true: '#4ECDC4' }}
+                        trackColor={{ false: '#3A3A4E', true: '#4ECDC4' }}
+                        thumbColor={soundEnabled ? '#fff' : '#888'}
                     />
                 </SettingRow>
 
@@ -71,27 +106,47 @@ export const SettingsScreen: React.FC = () => {
 
                 <SettingRow
                     label="Camera rPPG"
-                    description="Detection via face camera"
+                    description="Detect heart rate via face camera"
                 >
                     <Switch
                         value={cameraEnabled}
-                        onValueChange={setCameraEnabled}
-                        trackColor={{ true: '#4ECDC4' }}
+                        onValueChange={handleCameraToggle}
+                        trackColor={{ false: '#3A3A4E', true: '#4ECDC4' }}
+                        thumbColor={cameraEnabled ? '#fff' : '#888'}
                     />
                 </SettingRow>
+
+                {cameraEnabled && (
+                    <View style={styles.cameraInfo}>
+                        <Text style={styles.cameraInfoText}>
+                            💡 For best results, ensure good lighting and keep your face steady.
+                        </Text>
+                    </View>
+                )}
+
+                {/* Wearable Section */}
+                <WearableSettings />
 
                 {/* About Section */}
                 <Text style={styles.sectionTitle}>About</Text>
 
                 <View style={styles.aboutCard}>
                     <Text style={styles.aboutTitle}>ZenOne</Text>
-                    <Text style={styles.aboutVersion}>Version 1.0.0</Text>
+                    <Text style={styles.aboutVersion}>Version 2.0.0</Text>
                     <Text style={styles.aboutDescription}>
-                        Cross-platform breathing & meditation app powered by Rust.
+                        Cross-platform breathing & meditation app with camera-based biometrics.
                     </Text>
-                    <Text style={styles.aboutTech}>
-                        Core: zenb-core + zenb-signals from AGOLOS
-                    </Text>
+                    <View style={styles.techBadges}>
+                        <View style={styles.badge}>
+                            <Text style={styles.badgeText}>🦀 Rust Core</Text>
+                        </View>
+                        <View style={styles.badge}>
+                            <Text style={styles.badgeText}>💓 rPPG</Text>
+                        </View>
+                        <View style={styles.badge}>
+                            <Text style={styles.badgeText}>🧠 Active Inference</Text>
+                        </View>
+                    </View>
                 </View>
             </ScrollView>
         </SafeAreaView>
@@ -150,6 +205,19 @@ const styles = StyleSheet.create({
         fontSize: 13,
         marginTop: 4,
     },
+    cameraInfo: {
+        backgroundColor: '#4ECDC420',
+        marginHorizontal: 20,
+        marginTop: 8,
+        padding: 12,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: '#4ECDC440',
+    },
+    cameraInfoText: {
+        color: '#4ECDC4',
+        fontSize: 13,
+    },
     aboutCard: {
         backgroundColor: '#2A2A3E',
         marginHorizontal: 20,
@@ -174,10 +242,22 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         marginTop: 16,
     },
-    aboutTech: {
-        color: '#888',
+    techBadges: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'center',
+        marginTop: 16,
+        gap: 8,
+    },
+    badge: {
+        backgroundColor: '#3A3A4E',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 16,
+    },
+    badgeText: {
+        color: '#fff',
         fontSize: 12,
-        marginTop: 8,
     },
 });
 

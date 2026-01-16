@@ -1,48 +1,36 @@
 /**
- * Session Screen - Main breathing session UI (Updated)
+ * Session Screen - Main breathing session UI
+ * 
+ * NOW WITH CAMERA INTEGRATION and SESSION PERSISTENCE!
  */
 
-import React, { useEffect, useCallback, useRef } from 'react';
+import React, { useCallback, useRef } from 'react';
 import {
     View,
     Text,
     StyleSheet,
     TouchableOpacity,
     SafeAreaView,
-    Animated,
 } from 'react-native';
 import { BreathCircle, PatternPicker, VitalsDisplay, Timer } from '../components';
 import { useZenOneStore } from '../stores/zenoneStore';
+import { useSettingsStore } from '../stores/settingsStore';
+import { useSessionStore } from '../stores/sessionStore';
 import { useZenOne } from '../hooks/useZenOne';
 
-const PHASE_LABELS = {
+const PHASE_LABELS: Record<string, string> = {
     Inhale: 'Breathe In',
     HoldIn: 'Hold',
     Exhale: 'Breathe Out',
     HoldOut: 'Hold',
 };
 
-const PHASE_INSTRUCTIONS = {
+const PHASE_INSTRUCTIONS: Record<string, string> = {
     Inhale: 'Slowly fill your lungs',
     HoldIn: 'Keep the air in',
     Exhale: 'Release slowly',
     HoldOut: 'Stay empty',
 };
-
-// All 11 patterns from breath_patterns.rs
-const ALL_PATTERNS = [
-    { id: '4-7-8', label: 'Tranquility', tag: 'Sleep & Anxiety', description: 'Natural tranquilizer', inhale_sec: 4, hold_in_sec: 7, exhale_sec: 8, hold_out_sec: 0 },
-    { id: 'box', label: 'Focus', tag: 'Concentration', description: 'Navy SEALs technique', inhale_sec: 4, hold_in_sec: 4, exhale_sec: 4, hold_out_sec: 4 },
-    { id: 'calm', label: 'Balance', tag: 'Coherence', description: 'Restores HRV balance', inhale_sec: 4, hold_in_sec: 0, exhale_sec: 6, hold_out_sec: 0 },
-    { id: 'coherence', label: 'Coherence', tag: 'Heart Health', description: 'HRV Golden Ratio', inhale_sec: 6, hold_in_sec: 0, exhale_sec: 6, hold_out_sec: 0 },
-    { id: 'deep-relax', label: 'Deep Rest', tag: 'Stress Relief', description: 'Parasympathetic', inhale_sec: 4, hold_in_sec: 0, exhale_sec: 8, hold_out_sec: 0 },
-    { id: '7-11', label: '7-11', tag: 'Deep Calm', description: 'Panic relief', inhale_sec: 7, hold_in_sec: 0, exhale_sec: 11, hold_out_sec: 0 },
-    { id: 'awake', label: 'Energize', tag: 'Wake Up', description: 'Boost alertness', inhale_sec: 4, hold_in_sec: 0, exhale_sec: 2, hold_out_sec: 0 },
-    { id: 'triangle', label: 'Triangle', tag: 'Yoga', description: 'Emotional stability', inhale_sec: 4, hold_in_sec: 4, exhale_sec: 4, hold_out_sec: 0 },
-    { id: 'tactical', label: 'Tactical', tag: 'Advanced Focus', description: 'High-stress', inhale_sec: 5, hold_in_sec: 5, exhale_sec: 5, hold_out_sec: 5 },
-    { id: 'buteyko', label: 'Light Air', tag: 'Health', description: 'Reduced breathing', inhale_sec: 3, hold_in_sec: 0, exhale_sec: 3, hold_out_sec: 4 },
-    { id: 'wim-hof', label: 'Tummo Power', tag: 'Immunity', description: 'Charge the body', inhale_sec: 2, hold_in_sec: 0, exhale_sec: 1, hold_out_sec: 15 },
-];
 
 export const SessionScreen: React.FC = () => {
     const {
@@ -51,35 +39,58 @@ export const SessionScreen: React.FC = () => {
         isSessionActive,
         currentFrame,
         sessionStats,
-        setPatterns,
         selectPattern,
         startSession,
         stopSession,
     } = useZenOneStore();
 
-    // Initialize patterns and breathing timer
-    useEffect(() => {
-        setPatterns(ALL_PATTERNS);
-    }, [setPatterns]);
+    const { cameraEnabled } = useSettingsStore();
+    const addSession = useSessionStore(state => state.addSession);
 
-    // Use the ZenOne hook for timing logic
-    useZenOne();
+    // Initialize SDK and load patterns via hook (with camera option)
+    const { getSessionStats, camera } = useZenOne({ cameraEnabled });
 
     const sessionTimeRef = useRef(0);
+    const avgSignalQualityRef = useRef<number[]>([]);
 
     const handleStartStop = useCallback(() => {
         if (isSessionActive) {
-            stopSession({
-                durationSec: sessionTimeRef.current,
-                cyclesCompleted: currentFrame.cyclesCompleted,
-                patternId: selectedPatternId,
-                avgHeartRate: null, // Would come from rPPG
+            // Get stats from SDK before stopping
+            const stats = getSessionStats();
+            const selectedPattern = patterns.find(p => p.id === selectedPatternId);
+
+            const sessionData = {
+                durationSec: stats?.duration_sec ?? sessionTimeRef.current,
+                cyclesCompleted: stats?.cycles_completed ?? currentFrame.cyclesCompleted,
+                patternId: stats?.pattern_id ?? selectedPatternId,
+                avgHeartRate: stats?.avg_heart_rate ?? null,
+            };
+
+            // Save to zenone store
+            stopSession(sessionData);
+
+            // Save to session history (for streaks/insights)
+            const avgQuality = avgSignalQualityRef.current.length > 0
+                ? avgSignalQualityRef.current.reduce((a, b) => a + b, 0) / avgSignalQualityRef.current.length
+                : 0;
+
+            addSession({
+                date: new Date().toISOString(),
+                patternId: sessionData.patternId,
+                patternLabel: selectedPattern?.label || sessionData.patternId,
+                durationSec: sessionData.durationSec,
+                cyclesCompleted: sessionData.cyclesCompleted,
+                avgHeartRate: sessionData.avgHeartRate,
+                avgSignalQuality: avgQuality,
             });
+
+            avgSignalQualityRef.current = [];
         } else {
             sessionTimeRef.current = 0;
+            avgSignalQualityRef.current = [];
             startSession();
         }
-    }, [isSessionActive, currentFrame, selectedPatternId, startSession, stopSession]);
+    }, [isSessionActive, currentFrame, selectedPatternId, patterns, startSession, stopSession, getSessionStats, addSession]);
 
     const selectedPattern = patterns.find(p => p.id === selectedPatternId);
 
@@ -88,11 +99,20 @@ export const SessionScreen: React.FC = () => {
             {/* Header */}
             <View style={styles.header}>
                 <Text style={styles.title}>ZenOne</Text>
-                {selectedPattern && (
-                    <View style={styles.patternBadge}>
-                        <Text style={styles.patternBadgeText}>{selectedPattern.label}</Text>
-                    </View>
-                )}
+                <View style={styles.headerRight}>
+                    {cameraEnabled && isSessionActive && (
+                        <View style={styles.cameraBadge}>
+                            <Text style={styles.cameraBadgeText}>
+                                {camera.isFaceDetected ? '👤 Face' : '📷 Scanning...'}
+                            </Text>
+                        </View>
+                    )}
+                    {selectedPattern && (
+                        <View style={styles.patternBadge}>
+                            <Text style={styles.patternBadgeText}>{selectedPattern.label}</Text>
+                        </View>
+                    )}
+                </View>
             </View>
 
             {/* Timer (during session) */}
@@ -111,10 +131,10 @@ export const SessionScreen: React.FC = () => {
                     size={280}
                 />
                 <Text style={styles.phaseLabel}>
-                    {PHASE_LABELS[currentFrame.phase]}
+                    {PHASE_LABELS[currentFrame.phase] || currentFrame.phase}
                 </Text>
                 <Text style={styles.phaseInstruction}>
-                    {PHASE_INSTRUCTIONS[currentFrame.phase]}
+                    {PHASE_INSTRUCTIONS[currentFrame.phase] || ''}
                 </Text>
             </View>
 
@@ -126,7 +146,7 @@ export const SessionScreen: React.FC = () => {
             />
 
             {/* Pattern Picker (only when not in session) */}
-            {!isSessionActive && (
+            {!isSessionActive && patterns.length > 0 && (
                 <View style={styles.pickerContainer}>
                     <Text style={styles.sectionTitle}>Choose Pattern</Text>
                     <PatternPicker
@@ -162,7 +182,7 @@ export const SessionScreen: React.FC = () => {
                         <Text style={styles.statsLabel}>Cycles:</Text>
                         <Text style={styles.statsValue}>{sessionStats.cyclesCompleted}</Text>
                     </View>
-                    {sessionStats.avgHeartRate && (
+                    {sessionStats.avgHeartRate !== null && (
                         <View style={styles.statsRow}>
                             <Text style={styles.statsLabel}>Avg HR:</Text>
                             <Text style={styles.statsValue}>
@@ -189,6 +209,11 @@ const styles = StyleSheet.create({
         paddingTop: 10,
         paddingBottom: 8,
     },
+    headerRight: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
     title: {
         fontSize: 28,
         fontWeight: 'bold',
@@ -204,6 +229,16 @@ const styles = StyleSheet.create({
         color: '#4ECDC4',
         fontSize: 14,
         fontWeight: '600',
+    },
+    cameraBadge: {
+        backgroundColor: '#FF6B6B33',
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 12,
+    },
+    cameraBadgeText: {
+        color: '#FF6B6B',
+        fontSize: 12,
     },
     circleContainer: {
         flex: 1,

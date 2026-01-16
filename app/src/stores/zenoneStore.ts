@@ -1,21 +1,34 @@
 /**
  * ZenOne Store - Zustand state management
+ * 
+ * REFACTORED: Uses SDK types from sdk/ZenOneSDK.ts
  */
 
 import { create } from 'zustand';
-import type { PatternInfo } from '../components/PatternPicker';
+import type { FfiPhase } from '../sdk';
 
-// Types matching Rust FFI
-export type Phase = 'Inhale' | 'HoldIn' | 'Exhale' | 'HoldOut';
+// Pattern info for UI (subset of FfiBreathPattern)
+export interface PatternInfo {
+    id: string;
+    label: string;
+    tag: string;
+    description: string;
+    inhale_sec: number;
+    hold_in_sec: number;
+    exhale_sec: number;
+    hold_out_sec: number;
+}
 
+// Frame data matching SDK FfiFrame
 export interface FrameData {
-    phase: Phase;
+    phase: FfiPhase;
     phaseProgress: number;
     cyclesCompleted: number;
     heartRate: number | null;
     signalQuality: number;
 }
 
+// Session stats matching SDK FfiSessionStats
 export interface SessionStats {
     durationSec: number;
     cyclesCompleted: number;
@@ -24,11 +37,11 @@ export interface SessionStats {
 }
 
 interface ZenOneState {
-    // Patterns
+    // Patterns (loaded from SDK)
     patterns: PatternInfo[];
     selectedPatternId: string;
 
-    // Session
+    // Session state
     isSessionActive: boolean;
     currentFrame: FrameData;
     sessionStats: SessionStats | null;
@@ -41,18 +54,20 @@ interface ZenOneState {
     updateFrame: (frame: FrameData) => void;
 }
 
+const DEFAULT_FRAME: FrameData = {
+    phase: 'Inhale',
+    phaseProgress: 0,
+    cyclesCompleted: 0,
+    heartRate: null,
+    signalQuality: 0,
+};
+
 export const useZenOneStore = create<ZenOneState>((set) => ({
     // Initial state
     patterns: [],
     selectedPatternId: '4-7-8',
     isSessionActive: false,
-    currentFrame: {
-        phase: 'Inhale',
-        phaseProgress: 0,
-        cyclesCompleted: 0,
-        heartRate: null,
-        signalQuality: 0,
-    },
+    currentFrame: { ...DEFAULT_FRAME },
     sessionStats: null,
 
     // Actions
@@ -63,13 +78,7 @@ export const useZenOneStore = create<ZenOneState>((set) => ({
     startSession: () => set({
         isSessionActive: true,
         sessionStats: null,
-        currentFrame: {
-            phase: 'Inhale',
-            phaseProgress: 0,
-            cyclesCompleted: 0,
-            heartRate: null,
-            signalQuality: 0,
-        },
+        currentFrame: { ...DEFAULT_FRAME },
     }),
 
     stopSession: (stats) => set({
@@ -79,3 +88,6 @@ export const useZenOneStore = create<ZenOneState>((set) => ({
 
     updateFrame: (frame) => set({ currentFrame: frame }),
 }));
+
+// Re-export types for convenience
+export type { FfiPhase as Phase };

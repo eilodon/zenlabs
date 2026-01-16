@@ -1,2 +1,7 @@
+/**
+ * Hooks Index
+ */
+
 export { useZenOne } from './useZenOne';
-export { useAudio, BINAURAL_PRESETS } from './useAudio';
+export { useAudio } from './useAudio';
+export { useCamera, type CameraFrame } from './useCamera';

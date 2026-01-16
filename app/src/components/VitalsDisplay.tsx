@@ -1,6 +1,6 @@
 /**
- * VitalsDisplay Component
- * Shows heart rate and signal quality
+ * VitalsDisplay Component (Enhanced with HRV)
+ * Shows heart rate, HRV, signal quality, and cycles
  */
 
 import React from 'react';
@@ -10,12 +10,17 @@ interface VitalsDisplayProps {
     heartRate: number | null;
     signalQuality: number;
     cyclesCompleted: number;
+    hrv?: {
+        rmssd: number;
+        sdnn: number;
+    } | null;
 }
 
 export const VitalsDisplay: React.FC<VitalsDisplayProps> = ({
     heartRate,
     signalQuality,
     cyclesCompleted,
+    hrv,
 }) => {
     const getQualityLabel = (q: number) => {
         if (q > 0.8) return { label: 'Excellent', color: '#4ECDC4' };
@@ -24,7 +29,14 @@ export const VitalsDisplay: React.FC<VitalsDisplayProps> = ({
         return { label: 'Searching...', color: '#888' };
     };
 
+    const getHrvStatus = (rmssd: number) => {
+        if (rmssd > 50) return { label: 'Relaxed', color: '#4ECDC4' };
+        if (rmssd > 30) return { label: 'Normal', color: '#45B7D1' };
+        return { label: 'Stressed', color: '#FF6B6B' };
+    };
+
     const quality = getQualityLabel(signalQuality);
+    const hrvStatus = hrv ? getHrvStatus(hrv.rmssd) : null;
 
     return (
         <View style={styles.container}>
@@ -37,12 +49,23 @@ export const VitalsDisplay: React.FC<VitalsDisplayProps> = ({
                 <Text style={styles.unit}>BPM</Text>
             </View>
 
-            {/* Cycles */}
-            <View style={styles.card}>
-                <Text style={styles.icon}>🔄</Text>
-                <Text style={styles.value}>{cyclesCompleted}</Text>
-                <Text style={styles.unit}>Cycles</Text>
-            </View>
+            {/* HRV (if available) */}
+            {hrv ? (
+                <View style={styles.card}>
+                    <Text style={styles.icon}>🧠</Text>
+                    <Text style={[styles.value, { color: hrvStatus?.color, fontSize: 18 }]}>
+                        {Math.round(hrv.rmssd)}ms
+                    </Text>
+                    <Text style={styles.unit}>HRV</Text>
+                </View>
+            ) : (
+                /* Cycles */
+                <View style={styles.card}>
+                    <Text style={styles.icon}>🔄</Text>
+                    <Text style={styles.value}>{cyclesCompleted}</Text>
+                    <Text style={styles.unit}>Cycles</Text>
+                </View>
+            )}
 
             {/* Signal Quality */}
             <View style={styles.card}>
@@ -87,4 +110,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default VitalsDisplay;
+export default React.memo(VitalsDisplay);

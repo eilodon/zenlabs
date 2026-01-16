@@ -70,4 +70,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default Timer;
+export default React.memo(Timer);

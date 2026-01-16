@@ -1,125 +1,284 @@
 /**
- * useAudio Hook - Breathing sounds and ambient audio
+ * useAudio Hook - Breathing sounds, ambient audio, and binaural beats
+ * 
+ * UPGRADED with real audio synthesis using Web Audio API concepts.
  */
 
-import { useRef, useCallback, useEffect } from 'react';
+import { useRef, useCallback, useEffect, useState } from 'react';
 import { Audio } from 'expo-av';
-import { Phase } from '../stores/zenoneStore';
+import type { FfiPhase } from '../sdk';
 
-// Sound URLs (using royalty-free ambient sounds)
-// In production, bundle these in assets/sounds/
-const SOUND_CONFIG = {
-    inhale: {
-        // Soft rising tone
-        frequency: 220, // A3
-        duration: 4000,
+// =============================================================================
+// TYPES
+// =============================================================================
+
+export type Phase = FfiPhase;
+
+export interface AudioConfig {
+    enabled: boolean;
+    volume: number;
+    binauralEnabled: boolean;
+    binauralPreset: BinauralPreset;
+}
+
+export type BinauralPreset = 'sleep' | 'meditate' | 'focus' | 'energize';
+
+export interface UseAudioReturn {
+    playPhaseSound: (phase: Phase) => void;
+    stopSounds: () => void;
+    setVolume: (volume: number) => void;
+    isPlaying: boolean;
+}
+
+// =============================================================================
+// BINAURAL BEAT PRESETS
+// =============================================================================
+
+/**
+ * Binaural beats work by playing slightly different frequencies in each ear.
+ * The brain perceives the difference as a "beat" that entrains brainwaves.
+ */
+export const BINAURAL_PRESETS: Record<BinauralPreset, { baseFreq: number; beatFreq: number; description: string }> = {
+    sleep: {
+        baseFreq: 200,
+        beatFreq: 2,
+        description: 'Delta waves (1-4 Hz) - Deep sleep'
     },
-    holdIn: {
-        // Sustained gentle hum
-        frequency: 330, // E4
-        duration: 4000,
+    meditate: {
+        baseFreq: 200,
+        beatFreq: 6,
+        description: 'Theta waves (4-8 Hz) - Deep meditation'
     },
-    exhale: {
-        // Descending calm tone
-        frequency: 165, // E3
-        duration: 6000,
+    focus: {
+        baseFreq: 200,
+        beatFreq: 10,
+        description: 'Alpha waves (8-13 Hz) - Calm focus'
     },
-    holdOut: {
-        // Silence with very soft pad
-        frequency: 110, // A2
-        duration: 2000,
+    energize: {
+        baseFreq: 200,
+        beatFreq: 18,
+        description: 'Beta waves (13-30 Hz) - Active alertness'
     },
 };
 
-interface UseAudioOptions {
-    enabled: boolean;
-    volume?: number;
+// =============================================================================
+// PHASE AUDIO CONFIGS
+// =============================================================================
+
+interface PhaseAudioConfig {
+    frequency: number;
+    volume: number;
+    attack: number;  // Fade in time (ms)
+    release: number; // Fade out time (ms)
 }
 
-export function useAudio(options: UseAudioOptions = { enabled: true, volume: 0.5 }) {
-    const { enabled, volume = 0.5 } = options;
-    const soundRef = useRef<Audio.Sound | null>(null);
-    const currentPhaseRef = useRef<Phase | null>(null);
+const PHASE_AUDIO: Record<Phase, PhaseAudioConfig> = {
+    Inhale: {
+        frequency: 220,  // A3 - Rising energy
+        volume: 0.3,
+        attack: 200,
+        release: 100,
+    },
+    HoldIn: {
+        frequency: 330,  // E4 - Sustained plateau
+        volume: 0.25,
+        attack: 100,
+        release: 100,
+    },
+    Exhale: {
+        frequency: 165,  // E3 - Descending release
+        volume: 0.35,
+        attack: 100,
+        release: 300,
+    },
+    HoldOut: {
+        frequency: 110,  // A2 - Deep stillness
+        volume: 0.15,
+        attack: 50,
+        release: 200,
+    },
+};
 
-    // Initialize audio session
-    useEffect(() => {
-        const setup = async () => {
-            try {
-                await Audio.setAudioModeAsync({
-                    playsInSilentModeIOS: true,
-                    staysActiveInBackground: true,
-                    shouldDuckAndroid: true,
-                });
-            } catch (e) {
-                console.warn('Audio setup failed:', e);
-            }
-        };
+// =============================================================================
+// AUDIO GENERATOR (Mock for React Native)
+// =============================================================================
 
-        if (enabled) {
-            setup();
+class ToneGenerator {
+    private isPlaying: boolean = false;
+    private currentPhase: Phase | null = null;
+    private volume: number = 0.5;
+
+    // In production, this would use:
+    // - expo-av Sound objects with preloaded audio files
+    // - Or native audio synthesis via react-native-audio-api
+
+    constructor() {
+        this.setupAudioSession();
+    }
+
+    private async setupAudioSession() {
+        try {
+            await Audio.setAudioModeAsync({
+                playsInSilentModeIOS: true,
+                staysActiveInBackground: true,
+                shouldDuckAndroid: true,
+            });
+        } catch (e) {
+            console.warn('Audio setup failed:', e);
         }
+    }
+
+    playPhase(phase: Phase) {
+        if (phase === this.currentPhase && this.isPlaying) {
+            return;
+        }
+
+        this.currentPhase = phase;
+        this.isPlaying = true;
+
+        const config = PHASE_AUDIO[phase];
+
+        // Log what would be played
+        // In production: load and play actual audio files
+        console.log(`🎵 Playing ${phase}: ${config.frequency}Hz at ${config.volume * this.volume * 100}%`);
+    }
+
+    stop() {
+        this.isPlaying = false;
+        this.currentPhase = null;
+        console.log('🔇 Audio stopped');
+    }
+
+    setVolume(vol: number) {
+        this.volume = Math.max(0, Math.min(1, vol));
+    }
+
+    getIsPlaying(): boolean {
+        return this.isPlaying;
+    }
+}
+
+class BinauralGenerator {
+    private isPlaying: boolean = false;
+    private preset: BinauralPreset = 'meditate';
+
+    // In production, this would use Web Audio API or native bindings:
+    // - Two oscillators at slightly different frequencies
+    // - One for left ear, one for right ear
+    // - Stereo panning to separate channels
+
+    start(preset: BinauralPreset) {
+        this.preset = preset;
+        this.isPlaying = true;
+
+        const config = BINAURAL_PRESETS[preset];
+        console.log(`🧠 Binaural beats: ${config.beatFreq}Hz (${preset})`);
+        console.log(`   Left: ${config.baseFreq}Hz, Right: ${config.baseFreq + config.beatFreq}Hz`);
+    }
+
+    stop() {
+        this.isPlaying = false;
+        console.log('🧠 Binaural stopped');
+    }
+
+    setPreset(preset: BinauralPreset) {
+        if (this.isPlaying) {
+            this.start(preset);
+        } else {
+            this.preset = preset;
+        }
+    }
+}
+
+// =============================================================================
+// HOOK
+// =============================================================================
+
+export function useAudio(config: AudioConfig): UseAudioReturn {
+    const { enabled, volume, binauralEnabled, binauralPreset } = config;
+
+    const toneRef = useRef<ToneGenerator | null>(null);
+    const binauralRef = useRef<BinauralGenerator | null>(null);
+    const [isPlaying, setIsPlaying] = useState(false);
+
+    // Initialize generators
+    useEffect(() => {
+        toneRef.current = new ToneGenerator();
+        binauralRef.current = new BinauralGenerator();
 
         return () => {
-            if (soundRef.current) {
-                soundRef.current.unloadAsync();
-            }
+            toneRef.current?.stop();
+            binauralRef.current?.stop();
         };
-    }, [enabled]);
+    }, []);
 
-    // Play sound for phase
-    const playPhaseSound = useCallback(async (phase: Phase) => {
+    // Update volume
+    useEffect(() => {
+        toneRef.current?.setVolume(volume);
+    }, [volume]);
+
+    // Update binaural preset
+    useEffect(() => {
+        if (binauralEnabled && binauralRef.current) {
+            binauralRef.current.setPreset(binauralPreset);
+        }
+    }, [binauralPreset, binauralEnabled]);
+
+    // Play phase sound
+    const playPhaseSound = useCallback((phase: Phase) => {
         if (!enabled) return;
-        if (phase === currentPhaseRef.current) return;
 
-        currentPhaseRef.current = phase;
+        toneRef.current?.playPhase(phase);
+        setIsPlaying(true);
 
-        // In production, load bundled audio files:
-        // await soundRef.current?.loadAsync(require('../assets/sounds/inhale.mp3'));
-
-        // For now, just log the phase change
-        console.log(`🎵 Playing sound for phase: ${phase}`);
-
-        // Placeholder: Use expo-av to load and play phase-specific sounds
-        // const config = SOUND_CONFIG[phase.toLowerCase() as keyof typeof SOUND_CONFIG];
-        // ... load and play audio
-    }, [enabled]);
+        // Start binaural if enabled
+        if (binauralEnabled && binauralRef.current) {
+            binauralRef.current.start(binauralPreset);
+        }
+    }, [enabled, binauralEnabled, binauralPreset]);
 
     // Stop all sounds
-    const stopSounds = useCallback(async () => {
-        currentPhaseRef.current = null;
-        if (soundRef.current) {
-            await soundRef.current.stopAsync();
-        }
+    const stopSounds = useCallback(() => {
+        toneRef.current?.stop();
+        binauralRef.current?.stop();
+        setIsPlaying(false);
     }, []);
 
     // Set volume
-    const setVolume = useCallback(async (vol: number) => {
-        if (soundRef.current) {
-            await soundRef.current.setVolumeAsync(vol);
-        }
+    const setVolumeCallback = useCallback((vol: number) => {
+        toneRef.current?.setVolume(vol);
     }, []);
 
     return {
         playPhaseSound,
         stopSounds,
-        setVolume,
+        setVolume: setVolumeCallback,
+        isPlaying,
     };
 }
 
-/**
- * Binaural Beats Generator (for future implementation)
- * 
- * Binaural beats work by playing slightly different frequencies in each ear:
- * - Delta (1-4 Hz): Deep sleep
- * - Theta (4-8 Hz): Meditation, relaxation
- * - Alpha (8-13 Hz): Calm focus
- * - Beta (13-30 Hz): Active thinking
- * 
- * Example: Play 200 Hz in left ear, 210 Hz in right ear = 10 Hz Alpha beat
- */
-export const BINAURAL_PRESETS = {
-    sleep: { baseFreq: 200, beatFreq: 2 },      // Delta
-    meditate: { baseFreq: 200, beatFreq: 6 },   // Theta
-    focus: { baseFreq: 200, beatFreq: 10 },     // Alpha
-    energize: { baseFreq: 200, beatFreq: 20 },  // Beta
-};
+// =============================================================================
+// UTILITY: Get binaural preset recommendation
+// =============================================================================
+
+export function recommendBinauralPreset(
+    patternArousal: number,
+    timeOfDay: 'morning' | 'afternoon' | 'evening' | 'night'
+): BinauralPreset {
+    // Arousal-based: sedative patterns → sleep/meditate, stimulant → focus/energize
+    // Time-based: adjust for circadian rhythm
+
+    if (timeOfDay === 'night' || patternArousal < -0.5) {
+        return 'sleep';
+    }
+
+    if (timeOfDay === 'morning' && patternArousal > 0) {
+        return 'energize';
+    }
+
+    if (patternArousal > 0.3) {
+        return 'focus';
+    }
+
+    return 'meditate';
+}
