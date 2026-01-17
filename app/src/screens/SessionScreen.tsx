@@ -4,7 +4,7 @@
  * NOW WITH CAMERA INTEGRATION and SESSION PERSISTENCE!
  */
 
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useRef, useEffect } from 'react';
 import {
     View,
     Text,
@@ -12,6 +12,7 @@ import {
     TouchableOpacity,
     SafeAreaView,
 } from 'react-native';
+import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { BreathCircle, PatternPicker, VitalsDisplay, Timer } from '../components';
 import { useZenOneStore } from '../stores/zenoneStore';
 import { useSettingsStore } from '../stores/settingsStore';
@@ -52,6 +53,20 @@ export const SessionScreen: React.FC = () => {
 
     const sessionTimeRef = useRef(0);
     const avgSignalQualityRef = useRef<number[]>([]);
+
+    // Keep screen awake during active session
+    useEffect(() => {
+        if (isSessionActive) {
+            activateKeepAwakeAsync('session').catch(() => { });
+        } else {
+            deactivateKeepAwake('session');
+        }
+
+        return () => {
+            deactivateKeepAwake('session');
+        };
+    }, [isSessionActive]);
+
 
     const handleStartStop = useCallback(() => {
         if (isSessionActive) {

@@ -37,9 +37,13 @@ export const SettingsScreen: React.FC = () => {
     const {
         hapticEnabled,
         soundEnabled,
+        voiceMode,
+        language,
         cameraEnabled,
         setHapticEnabled,
         setSoundEnabled,
+        setVoiceMode,
+        setLanguage,
         setCameraEnabled,
     } = useSettingsStore();
 
@@ -99,6 +103,59 @@ export const SettingsScreen: React.FC = () => {
                         trackColor={{ false: '#3A3A4E', true: '#4ECDC4' }}
                         thumbColor={soundEnabled ? '#fff' : '#888'}
                     />
+                </SettingRow>
+
+                {/* Voice Guidance Section */}
+                <Text style={styles.sectionTitle}>Voice Guidance</Text>
+
+                <SettingRow
+                    label="Voice Mode"
+                    description="Spoken instructions during breathing"
+                >
+                    <View style={styles.segmentControl}>
+                        {(['off', 'voice', 'counting'] as const).map((mode) => (
+                            <TouchableOpacity
+                                key={mode}
+                                style={[
+                                    styles.segment,
+                                    voiceMode === mode && styles.segmentActive
+                                ]}
+                                onPress={() => setVoiceMode(mode)}
+                            >
+                                <Text style={[
+                                    styles.segmentText,
+                                    voiceMode === mode && styles.segmentTextActive
+                                ]}>
+                                    {mode === 'off' ? '🔇' : mode === 'voice' ? '🗣️' : '🔢'}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                </SettingRow>
+
+                <SettingRow
+                    label="Language"
+                    description="For voice and interface"
+                >
+                    <View style={styles.segmentControl}>
+                        {(['en', 'vi'] as const).map((lang) => (
+                            <TouchableOpacity
+                                key={lang}
+                                style={[
+                                    styles.segment,
+                                    language === lang && styles.segmentActive
+                                ]}
+                                onPress={() => setLanguage(lang)}
+                            >
+                                <Text style={[
+                                    styles.segmentText,
+                                    language === lang && styles.segmentTextActive
+                                ]}>
+                                    {lang === 'en' ? '🇬🇧 EN' : '🇻🇳 VI'}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
                 </SettingRow>
 
                 {/* Camera Section */}
@@ -258,6 +315,26 @@ const styles = StyleSheet.create({
     badgeText: {
         color: '#fff',
         fontSize: 12,
+    },
+    segmentControl: {
+        flexDirection: 'row',
+        backgroundColor: '#3A3A4E',
+        borderRadius: 8,
+        overflow: 'hidden',
+    },
+    segment: {
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+    },
+    segmentActive: {
+        backgroundColor: '#4ECDC4',
+    },
+    segmentText: {
+        color: '#888',
+        fontSize: 14,
+    },
+    segmentTextActive: {
+        color: '#fff',
     },
 });
 

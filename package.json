@@ -8,8 +8,5 @@
         "android": "cd app && npm run android",
         "build:rust:ios": "cd rust-core && cargo build --target aarch64-apple-ios --release",
         "build:rust:android": "cd rust-core && cargo ndk -t arm64-v8a build --release"
-    },
-    "workspaces": [
-        "app"
-    ]
+    }
 }

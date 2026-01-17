@@ -1,5 +1,6 @@
 export { BreathCircle } from './BreathCircle';
 export { PatternPicker } from './PatternPicker';
+export type { EnhancedPatternInfo, ThemeColor } from './PatternPicker';
 export { VitalsDisplay } from './VitalsDisplay';
 export { Timer } from './Timer';
 export { GlowOrb } from './GlowOrb';
@@ -15,3 +16,10 @@ export { CoherenceMeter } from './CoherenceMeter';
 export { BreathHeartSync } from './BreathHeartSync';
 export { ShareCard } from './ShareCard';
 export { Leaderboard } from './Leaderboard';
+export { SettingsSheet } from './SettingsSheet';
+export { KernelMonitor } from './KernelMonitor';
+export type { KernelMonitorProps } from './KernelMonitor';
+
+// Design System
+export * from './design-system';
+

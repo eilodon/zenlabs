@@ -10,3 +10,5 @@ export { breathingCoach, useCoaching } from './coachingService';
 export type { CoachingContext, CoachingMessage } from './coachingService';
 export { authService, useAuth, syncUserData } from './authService';
 export type { UserProfile, AuthState, SessionSyncData } from './authService';
+export { voiceGuidance } from './voiceGuidance';
+export type { VoiceMode } from './voiceGuidance';
