@@ -66,18 +66,22 @@ export const Timer: React.FC<TimerProps> = ({ isRunning, onTick }) => {
 const styles = StyleSheet.create({
     container: {
         alignItems: 'center',
-        paddingVertical: 8,
+        paddingVertical: 6,
     },
     time: {
         color: '#fff',
-        fontSize: 32,
+        fontSize: 30,
         fontWeight: '300',
         fontVariant: ['tabular-nums'],
+        letterSpacing: 1,
     },
     label: {
-        color: '#888',
-        fontSize: 12,
+        color: '#999',
+        fontSize: 11,
         marginTop: 4,
+        letterSpacing: 1.2,
+        textTransform: 'uppercase',
+        fontWeight: '600',
     },
 });
 

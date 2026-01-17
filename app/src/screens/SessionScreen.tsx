@@ -100,7 +100,7 @@ export const SessionScreen: React.FC = () => {
 
     // Dynamic layout calculations
     const isLandscape = width > height;
-    const orbSize = Math.min(width * 0.85, height * 0.45);
+    const orbSize = Math.min(width * 0.78, height * 0.42);
     const spacerHeight = height * 0.02;
 
     const selectedPattern = patterns.find(p => p.id === selectedPatternId);
@@ -238,14 +238,15 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         paddingHorizontal: 24,
-        paddingTop: 12,
+        paddingTop: 8,
+        paddingBottom: 4,
         zIndex: 10,
     },
     title: {
-        fontSize: 24,
+        fontSize: 22,
         fontWeight: '700',
         color: '#fff',
-        letterSpacing: 0.5,
+        letterSpacing: 0.8,
     },
     headerRight: {
         flexDirection: 'row',
@@ -282,26 +283,27 @@ const styles = StyleSheet.create({
         position: 'relative',
     },
     topMetaContainer: {
-        height: 60,
+        height: 64,
         justifyContent: 'flex-end',
         alignItems: 'center',
-        marginBottom: 10,
+        marginBottom: 12,
     },
     activeMeta: {
         alignItems: 'center',
     },
     welcomeText: {
-        color: 'rgba(255,255,255,0.5)',
-        fontSize: 16,
-        letterSpacing: 1,
+        color: 'rgba(255,255,255,0.45)',
+        fontSize: 14,
+        letterSpacing: 1.5,
         textTransform: 'uppercase',
+        fontWeight: '600',
     },
     phaseLabel: {
         color: '#fff',
-        fontSize: 28,
+        fontSize: 26,
         fontWeight: '300',
-        letterSpacing: 2,
-        marginBottom: 4,
+        letterSpacing: 2.5,
+        marginBottom: 6,
     },
     circleContainer: {
         justifyContent: 'center',
@@ -313,36 +315,36 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     phaseInstruction: {
-        color: 'rgba(255,255,255,0.6)',
-        fontSize: 15,
+        color: 'rgba(255,255,255,0.55)',
+        fontSize: 14,
         textAlign: 'center',
-        marginTop: 16,
+        marginTop: 18,
         fontWeight: '400',
-        letterSpacing: 0.5,
+        letterSpacing: 0.8,
     },
 
     // Bottom Controls
     bottomControls: {
-        paddingBottom: 20,
+        paddingBottom: 16,
         paddingHorizontal: 20,
         justifyContent: 'flex-end',
         zIndex: 100, // Ensure button is always clickable
     },
     pickerContainer: {
-        marginBottom: 24,
+        marginBottom: 20,
     },
     startButton: {
         backgroundColor: '#fff',
-        height: 64,
-        borderRadius: 32,
+        height: 54,
+        borderRadius: 27,
         justifyContent: 'center',
         alignItems: 'center',
         shadowColor: '#fff',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 16,
-        elevation: 8,
-        marginBottom: 8,
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.18,
+        shadowRadius: 12,
+        elevation: 6,
+        marginBottom: 6,
     },
     stopButton: {
         backgroundColor: 'rgba(255, 77, 77, 0.15)',
@@ -356,20 +358,20 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     buttonIcon: {
-        fontSize: 18,
-        marginRight: 10,
+        fontSize: 16,
+        marginRight: 8,
         color: '#000',
     },
     startText: {
         color: '#000',
-        fontSize: 16,
+        fontSize: 15,
         fontWeight: '700',
-        letterSpacing: 1.5,
+        letterSpacing: 1.2,
     },
     buttonArrow: {
         color: '#000',
-        fontSize: 20,
-        marginLeft: 8,
+        fontSize: 18,
+        marginLeft: 6,
         opacity: 0.5,
     },
 
