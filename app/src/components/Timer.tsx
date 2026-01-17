@@ -16,27 +16,38 @@ export const Timer: React.FC<TimerProps> = ({ isRunning, onTick }) => {
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     useEffect(() => {
+        let interval: ReturnType<typeof setInterval>;
+
         if (isRunning) {
-            setSeconds(0);
-            intervalRef.current = setInterval(() => {
+            // Only reset if we are starting fresh? 
+            // Actually, if we just toggle isRunning, resetting is correct behavior for a new session.
+            // But if onTick changes, we DO NOT want to reset.
+            // setSeconds(0) should be outside the effect or guarded.
+            // Better: split the reset logic.
+        }
+
+        // This effect ONLY handles the interval
+        if (isRunning) {
+            interval = setInterval(() => {
                 setSeconds((s) => {
                     const next = s + 1;
                     onTick?.(next);
                     return next;
                 });
             }, 1000);
-        } else {
-            if (intervalRef.current) {
-                clearInterval(intervalRef.current);
-            }
         }
 
         return () => {
-            if (intervalRef.current) {
-                clearInterval(intervalRef.current);
-            }
+            if (interval) clearInterval(interval);
         };
     }, [isRunning, onTick]);
+
+    // Separate effect for resetting when starting
+    useEffect(() => {
+        if (isRunning) {
+            setSeconds(0);
+        }
+    }, [isRunning]);
 
     const formatTime = (sec: number) => {
         const min = Math.floor(sec / 60);
