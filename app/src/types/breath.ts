@@ -166,3 +166,45 @@ export type BreathPattern = {
     tier: PatternTier;
     arousalImpact: number; // -1 (Sedative) to 1 (Stimulant)
 };
+
+// --- Kernel Runtime State ---
+
+export type RuntimeStatus = 'IDLE' | 'RUNNING' | 'PAUSED' | 'HALTED' | 'SAFETY_LOCK';
+export type AIConnectionStatus = 'connecting' | 'connected' | 'thinking' | 'speaking' | 'disconnected';
+
+export interface RuntimeState {
+    readonly version: number;
+    readonly status: RuntimeStatus;
+    readonly bootTimestamp: number;
+    readonly lastUpdateTimestamp: number;
+
+    // Protocol
+    readonly pattern: BreathPattern | null;
+    readonly tempoScale: number;
+
+    // Phase Machine
+    readonly phase: BreathPhase;
+    readonly phaseStartTime: number;
+    readonly phaseDuration: number;
+    readonly cycleCount: number;
+    readonly sessionStartTime: number;
+
+    // Belief State
+    readonly belief: BeliefState;
+
+    // Safety Registry (Kernel Owned)
+    readonly safetyRegistry: Readonly<Record<string, SafetyProfile>>;
+
+    // UI Cache (Computed/Ephemeral)
+    readonly phaseElapsed: number;
+    readonly sessionDuration: number;
+    readonly lastObservation: Observation | null;
+
+    // AI Context
+    readonly aiActive: boolean;
+    readonly aiStatus: AIConnectionStatus;
+    readonly lastAiMessage: string | null;
+
+    // Analysis Context
+    readonly startBelief: BeliefState | null;
+}

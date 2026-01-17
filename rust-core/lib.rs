@@ -3,8 +3,8 @@
 //! This crate exposes the ZenOne Rust core to mobile platforms via UniFFI.
 
 use zenb_core::{
-    breath_patterns::{builtin_patterns, BreathPattern, PatternTimings, ColorTheme, PatternTier},
-    phase_machine::{Phase, PhaseMachine, PhaseDurations},
+    breath_patterns::{builtin_patterns, BreathPattern},
+    phase_machine::{Phase, PhaseMachine},
 };
 use zenb_signals::rppg::EnsembleProcessor;
 use std::sync::Mutex;

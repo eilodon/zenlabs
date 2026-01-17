@@ -131,8 +131,9 @@ const WavePath: React.FC<WavePathProps> = ({
     frequency = 1,
 }) => {
     const dots = useMemo(() => {
-        return Array.from({ length: DOT_COUNT }, (_, i) => {
-            const ratio = DOT_COUNT === 1 ? 0 : i / (DOT_COUNT - 1);
+        const count = DOT_COUNT;
+        return Array.from({ length: count }, (_, i) => {
+            const ratio = count <= 1 ? 0 : i / (count - 1);
             return { ratio, x: ratio * WAVE_WIDTH };
         });
     }, []);

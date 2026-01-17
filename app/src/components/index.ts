@@ -3,6 +3,7 @@ export { PatternPicker } from './PatternPicker';
 export { VitalsDisplay } from './VitalsDisplay';
 export { Timer } from './Timer';
 export { GlowOrb } from './GlowOrb';
+export { SkiaBreathOrb } from './SkiaBreathOrb';
 export { WearableSettings } from './WearableSettings';
 export { UserProfile } from './UserProfile';
 export { ErrorBoundary } from './ErrorBoundary';
@@ -15,3 +16,4 @@ export { CoherenceMeter } from './CoherenceMeter';
 export { BreathHeartSync } from './BreathHeartSync';
 export { ShareCard } from './ShareCard';
 export { Leaderboard } from './Leaderboard';
+
