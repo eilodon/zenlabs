@@ -48,6 +48,7 @@ export const SessionScreen: React.FC = () => {
     const selectPattern = useZenOneStore(s => s.selectPattern);
     const startSession = useZenOneStore(s => s.startSession);
     const stopSession = useZenOneStore(s => s.stopSession);
+    const clearSessionStats = useZenOneStore(s => s.clearSessionStats);
 
     const { cameraEnabled } = useSettingsStore();
     const streak = useSessionStore(s => s.streak);
@@ -219,7 +220,7 @@ export const SessionScreen: React.FC = () => {
                             streakDays: streak.currentStreak,
                             // newBadge: undefined // Gamification not linked yet
                         }}
-                        onContinue={() => stopSession({ durationSec: 0, cyclesCompleted: 0, patternId: '', avgHeartRate: null })} // Clear stats to close modal
+                        onContinue={clearSessionStats}
                     />
                 </View>
             )}

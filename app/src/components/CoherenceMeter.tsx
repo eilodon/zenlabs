@@ -20,6 +20,7 @@ export const CoherenceMeter: React.FC<CoherenceMeterProps> = ({
 }) => {
     const fillAnim = useRef(new Animated.Value(0)).current;
     const glowAnim = useRef(new Animated.Value(0)).current;
+    const glowLoopRef = useRef<Animated.CompositeAnimation | null>(null);
 
     useEffect(() => {
         Animated.timing(fillAnim, {
@@ -28,10 +29,15 @@ export const CoherenceMeter: React.FC<CoherenceMeterProps> = ({
             easing: Easing.out(Easing.cubic),
             useNativeDriver: false,
         }).start();
+    }, [coherence.score, fillAnim]);
+
+    useEffect(() => {
+        glowLoopRef.current?.stop();
+        glowLoopRef.current = null;
 
         // Pulse glow when high coherence
         if (coherence.level === 'high') {
-            Animated.loop(
+            const loop = Animated.loop(
                 Animated.sequence([
                     Animated.timing(glowAnim, {
                         toValue: 1,
@@ -44,9 +50,18 @@ export const CoherenceMeter: React.FC<CoherenceMeterProps> = ({
                         useNativeDriver: true,
                     }),
                 ])
-            ).start();
+            );
+            glowLoopRef.current = loop;
+            loop.start();
+        } else {
+            glowAnim.setValue(0.6);
         }
-    }, [coherence, fillAnim, glowAnim]);
+
+        return () => {
+            glowLoopRef.current?.stop();
+            glowLoopRef.current = null;
+        };
+    }, [coherence.level, glowAnim]);
 
     const fillWidth = fillAnim.interpolate({
         inputRange: [0, 1],

@@ -8,6 +8,7 @@
  */
 
 import { useEffect, useRef, useCallback, useState } from 'react';
+import { AppState } from 'react-native';
 import { useZenOneStore } from '../stores/zenoneStore';
 import { getRuntime, type IZenOneRuntime, type FfiBreathPattern } from '../sdk';
 import { useCamera, type CameraFrame } from './useCamera';
@@ -32,24 +33,23 @@ export function useZenOne(options: UseZenOneOptions = {}) {
 
     // SDK Runtime instance
     const runtimeRef = useRef<IZenOneRuntime | null>(null);
-    const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const lastPhaseRef = useRef<string | null>(null);
+    const sessionStartedRef = useRef(false);
 
-    // Camera frame buffer for heart rate calculation
-    const frameBufferRef = useRef<CameraFrame[]>([]);
+    // Latest camera frame for heart rate calculation
+    const latestFrameRef = useRef<CameraFrame | null>(null);
+    const frameCountRef = useRef(0);
     const [cameraReady, setCameraReady] = useState(false);
+    const [isAppActive, setIsAppActive] = useState(AppState.currentState === 'active');
 
     // Camera integration
     const handleCameraFrame = useCallback((frame: CameraFrame) => {
-        // Add to buffer (keep last 5 seconds at 30fps = 150 frames)
-        frameBufferRef.current.push(frame);
-        if (frameBufferRef.current.length > 150) {
-            frameBufferRef.current.shift();
-        }
+        latestFrameRef.current = frame;
+        frameCountRef.current += 1;
     }, []);
 
     const camera = useCamera({
-        enabled: cameraEnabled && isSessionActive,
+        enabled: cameraEnabled && isSessionActive && isAppActive,
         onFrame: handleCameraFrame,
     });
 
@@ -61,12 +61,6 @@ export function useZenOne(options: UseZenOneOptions = {}) {
         // Load patterns from SDK (not hardcoded!)
         const patterns = runtime.getPatterns();
         setPatterns(patterns.map(toPatternInfo));
-
-        return () => {
-            if (intervalRef.current) {
-                clearInterval(intervalRef.current);
-            }
-        };
     }, []);
 
     // Load pattern when selection changes
@@ -82,10 +76,10 @@ export function useZenOne(options: UseZenOneOptions = {}) {
 
         const timestampUs = Date.now() * 1000; // Convert to microseconds
 
-        // Get RGB from camera frame buffer if available
+        // Get RGB from latest camera frame if available
         let r = 0, g = 0, b = 0;
-        if (frameBufferRef.current.length > 0) {
-            const latestFrame = frameBufferRef.current[frameBufferRef.current.length - 1];
+        const latestFrame = latestFrameRef.current;
+        if (latestFrame) {
             r = latestFrame.r;
             g = latestFrame.g;
             b = latestFrame.b;
@@ -123,8 +117,38 @@ export function useZenOne(options: UseZenOneOptions = {}) {
         });
     }, [isSessionActive, updateFrame]);
 
-    // Start/stop frame processing based on session state
     useEffect(() => {
+        const subscription = AppState.addEventListener('change', (nextState) => {
+            setIsAppActive(nextState === 'active');
+        });
+
+        return () => subscription.remove();
+    }, []);
+
+    useEffect(() => {
+        if (!isSessionActive) {
+            sessionStartedRef.current = false;
+            lastPhaseRef.current = null;
+            latestFrameRef.current = null;
+            frameCountRef.current = 0;
+            return;
+        }
+
+        if (!sessionStartedRef.current) {
+            lastPhaseRef.current = null;
+            latestFrameRef.current = null;
+            frameCountRef.current = 0;
+            runtimeRef.current?.startSession();
+            sessionStartedRef.current = true;
+        }
+    }, [isSessionActive]);
+
+    // Start/stop frame processing based on session state and app focus
+    useEffect(() => {
+        if (!isSessionActive || !isAppActive) {
+            return;
+        }
+
         let rafId: number | null = null;
         let lastTime = 0;
 
@@ -137,26 +161,14 @@ export function useZenOne(options: UseZenOneOptions = {}) {
             rafId = requestAnimationFrame(loop);
         };
 
-        if (isSessionActive) {
-            // Reset phase tracking
-            lastPhaseRef.current = null;
-            frameBufferRef.current = [];
-
-            // Start the runtime session
-            if (runtimeRef.current) {
-                runtimeRef.current.startSession();
-            }
-
-            // Start frame processing loop with requestAnimationFrame
-            rafId = requestAnimationFrame(loop);
-        }
+        rafId = requestAnimationFrame(loop);
 
         return () => {
             if (rafId !== null) {
                 cancelAnimationFrame(rafId);
             }
         };
-    }, [isSessionActive, processFrame]);
+    }, [isSessionActive, isAppActive, processFrame]);
 
     // Get session stats when stopping
     const getSessionStats = useCallback(() => {
@@ -172,7 +184,7 @@ export function useZenOne(options: UseZenOneOptions = {}) {
         // Camera exports
         camera,
         cameraEnabled,
-        frameCount: frameBufferRef.current.length,
+        frameCount: frameCountRef.current,
     };
 }
 

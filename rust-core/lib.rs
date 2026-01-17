@@ -208,6 +208,17 @@ impl ZenOneRuntime {
     /// Start a breathing session
     pub fn start_session(&self) {
         let mut inner = self.inner.lock().unwrap();
+        let patterns = builtin_patterns();
+        let pattern = patterns
+            .get(&inner.current_pattern_id)
+            .or_else(|| patterns.get("4-7-8"));
+
+        if let Some(pattern) = pattern {
+            inner.phase_machine = PhaseMachine::new(pattern.to_phase_durations());
+        }
+
+        inner.processor = EnsembleProcessor::new();
+        inner.last_timestamp_us = 0;
         inner.session = Some(SessionState {
             start_time: Instant::now(),
             pattern_id: inner.current_pattern_id.clone(),

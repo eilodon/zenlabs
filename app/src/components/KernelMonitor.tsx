@@ -69,6 +69,7 @@ export const KernelMonitor: React.FC<KernelMonitorProps> = ({ visible, onClose }
     const [logs, setLogs] = useState<LogEntry[]>([]);
     const scrollRef = useRef<ScrollView>(null);
     const pulseAnim = useRef(new Animated.Value(1)).current;
+    const pulseLoopRef = useRef<Animated.CompositeAnimation | null>(null);
 
     // Get state from stores
     const currentFrame = useZenOneStore(s => s.currentFrame);
@@ -90,16 +91,25 @@ export const KernelMonitor: React.FC<KernelMonitorProps> = ({ visible, onClose }
 
     // Pulse animation
     useEffect(() => {
+        pulseLoopRef.current?.stop();
+        pulseLoopRef.current = null;
+
         if (isSessionActive) {
-            Animated.loop(
+            const loop = Animated.loop(
                 Animated.sequence([
                     Animated.timing(pulseAnim, { toValue: 1.2, duration: 500, useNativeDriver: true }),
                     Animated.timing(pulseAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
                 ])
-            ).start();
+            );
+            pulseLoopRef.current = loop;
+            loop.start();
         } else {
             pulseAnim.setValue(1);
         }
+        return () => {
+            pulseLoopRef.current?.stop();
+            pulseLoopRef.current = null;
+        };
     }, [isSessionActive, pulseAnim]);
 
     const getLogColor = (type: LogEntry['type']) => {

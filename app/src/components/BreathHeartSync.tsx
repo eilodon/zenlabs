@@ -4,8 +4,8 @@
  * Shows breath wave and heart wave syncing together
  */
 
-import React, { useEffect, useRef } from 'react';
-import { View, StyleSheet, Animated, Dimensions } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { View, StyleSheet, Dimensions } from 'react-native';
 import type { FfiPhase } from '../sdk';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -17,8 +17,13 @@ interface BreathHeartSyncProps {
     coherence: number; // 0-100
 }
 
-const WAVE_POINTS = 60;
+const DOT_COUNT = 30;
 const WAVE_HEIGHT = 40;
+const WAVE_WIDTH = SCREEN_WIDTH - 40;
+const WAVE_CENTER = WAVE_HEIGHT / 2;
+const BREATH_AMPLITUDE = WAVE_HEIGHT * 0.4;
+const HEART_AMPLITUDE = WAVE_HEIGHT * 0.3;
+const HEART_FRAME_MS = 1000 / 30;
 
 export const BreathHeartSync: React.FC<BreathHeartSyncProps> = ({
     phase,
@@ -26,75 +31,49 @@ export const BreathHeartSync: React.FC<BreathHeartSyncProps> = ({
     heartRate,
     coherence,
 }) => {
-    const breathPhase = useRef(0);
-    const heartPhase = useRef(0);
-    const animValue = useRef(new Animated.Value(0)).current;
-
-    // Update breath phase based on current phase
-    useEffect(() => {
+    const breathPhase = useMemo(() => {
         switch (phase) {
             case 'Inhale':
-                breathPhase.current = progress * Math.PI;
-                break;
+                return progress * Math.PI;
             case 'HoldIn':
-                breathPhase.current = Math.PI;
-                break;
+                return Math.PI;
             case 'Exhale':
-                breathPhase.current = Math.PI + progress * Math.PI;
-                break;
+                return Math.PI + progress * Math.PI;
             case 'HoldOut':
-                breathPhase.current = 0;
-                break;
+                return 0;
+            default:
+                return 0;
         }
     }, [phase, progress]);
 
+    const [heartPhase, setHeartPhase] = useState(0);
+
     // Animate heart phase based on HR
     useEffect(() => {
-        const rate = heartRate ?? 60;
-        const duration = 60000 / rate;
+        let rafId: number | null = null;
+        let lastUpdate = 0;
+        const rate = Math.min(180, Math.max(40, heartRate ?? 60));
+        const radiansPerMs = (Math.PI * 2 * rate) / 60000;
 
-        const anim = Animated.loop(
-            Animated.timing(animValue, {
-                toValue: 1,
-                duration,
-                useNativeDriver: true,
-            })
-        );
+        const tick = (time: number) => {
+            if (lastUpdate === 0) {
+                lastUpdate = time;
+            }
+            const delta = time - lastUpdate;
+            if (delta >= HEART_FRAME_MS) {
+                lastUpdate = time;
+                setHeartPhase((prev) => (prev + delta * radiansPerMs) % (Math.PI * 2));
+            }
+            rafId = requestAnimationFrame(tick);
+        };
 
-        anim.start();
-        return () => anim.stop();
-    }, [heartRate, animValue]);
-
-    // Generate wave path
-    const generateBreathWave = (): string => {
-        const points: string[] = [];
-        const width = SCREEN_WIDTH - 40;
-        const centerY = WAVE_HEIGHT;
-
-        for (let i = 0; i < WAVE_POINTS; i++) {
-            const x = (i / WAVE_POINTS) * width;
-            const normalizedPhase = breathPhase.current + (i / WAVE_POINTS) * Math.PI * 2;
-            const y = centerY - Math.sin(normalizedPhase) * (WAVE_HEIGHT * 0.8);
-            points.push(`${i === 0 ? 'M' : 'L'} ${x} ${y}`);
-        }
-
-        return points.join(' ');
-    };
-
-    const generateHeartWave = (): string => {
-        const points: string[] = [];
-        const width = SCREEN_WIDTH - 40;
-        const centerY = WAVE_HEIGHT * 3;
-
-        for (let i = 0; i < WAVE_POINTS; i++) {
-            const x = (i / WAVE_POINTS) * width;
-            const normalizedPhase = heartPhase.current + (i / WAVE_POINTS) * Math.PI * 4;
-            const y = centerY - Math.sin(normalizedPhase) * (WAVE_HEIGHT * 0.6);
-            points.push(`${i === 0 ? 'M' : 'L'} ${x} ${y}`);
-        }
-
-        return points.join(' ');
-    };
+        rafId = requestAnimationFrame(tick);
+        return () => {
+            if (rafId !== null) {
+                cancelAnimationFrame(rafId);
+            }
+        };
+    }, [heartRate]);
 
     // Sync indicator (waves merge when coherent)
     const syncOpacity = coherence / 100;
@@ -113,17 +92,13 @@ export const BreathHeartSync: React.FC<BreathHeartSyncProps> = ({
                 </View>
                 <WavePath
                     color="#4ECDC4"
-                    points={generateBreathWave()}
+                    phaseOffset={breathPhase}
+                    amplitude={BREATH_AMPLITUDE}
                 />
             </View>
 
             {/* Sync zone */}
-            <Animated.View
-                style={[
-                    styles.syncZone,
-                    { opacity: syncOpacity },
-                ]}
-            />
+            <View style={[styles.syncZone, { opacity: syncOpacity }]} />
 
             {/* Heart wave */}
             <View style={styles.waveContainer}>
@@ -132,7 +107,9 @@ export const BreathHeartSync: React.FC<BreathHeartSyncProps> = ({
                 </View>
                 <WavePath
                     color="#FF6B6B"
-                    points={generateHeartWave()}
+                    phaseOffset={heartPhase}
+                    amplitude={HEART_AMPLITUDE}
+                    frequency={2}
                 />
             </View>
         </View>
@@ -140,17 +117,31 @@ export const BreathHeartSync: React.FC<BreathHeartSyncProps> = ({
 };
 
 // Simple SVG-like wave using View transforms
-const WavePath: React.FC<{ color: string; points: string }> = ({ color, points }) => {
-    // For React Native without SVG, we'll use a series of dots
-    const dotCount = 30;
-    const width = SCREEN_WIDTH - 40;
+interface WavePathProps {
+    color: string;
+    phaseOffset: number;
+    amplitude: number;
+    frequency?: number;
+}
+
+const WavePath: React.FC<WavePathProps> = ({
+    color,
+    phaseOffset,
+    amplitude,
+    frequency = 1,
+}) => {
+    const dots = useMemo(() => {
+        return Array.from({ length: DOT_COUNT }, (_, i) => {
+            const ratio = DOT_COUNT === 1 ? 0 : i / (DOT_COUNT - 1);
+            return { ratio, x: ratio * WAVE_WIDTH };
+        });
+    }, []);
 
     return (
         <View style={styles.wavePath}>
-            {Array.from({ length: dotCount }, (_, i) => {
-                const x = (i / dotCount) * width;
-                const phase = (i / dotCount) * Math.PI * 2;
-                const y = 20 - Math.sin(phase) * 15;
+            {dots.map((dot, i) => {
+                const wavePhase = phaseOffset + dot.ratio * Math.PI * 2 * frequency;
+                const y = WAVE_CENTER - Math.sin(wavePhase) * amplitude;
 
                 return (
                     <View
@@ -159,9 +150,9 @@ const WavePath: React.FC<{ color: string; points: string }> = ({ color, points }
                             styles.waveDot,
                             {
                                 backgroundColor: color,
-                                left: x,
+                                left: dot.x,
                                 top: y,
-                                opacity: 0.5 + (i / dotCount) * 0.5,
+                                opacity: 0.4 + dot.ratio * 0.6,
                             },
                         ]}
                     />

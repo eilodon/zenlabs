@@ -51,6 +51,7 @@ interface ZenOneState {
     selectPattern: (id: string) => void;
     startSession: () => void;
     stopSession: (stats: SessionStats) => void;
+    clearSessionStats: () => void;
     updateFrame: (frame: FrameData) => void;
 }
 
@@ -85,6 +86,8 @@ export const useZenOneStore = create<ZenOneState>((set) => ({
         isSessionActive: false,
         sessionStats: stats,
     }),
+
+    clearSessionStats: () => set({ sessionStats: null }),
 
     updateFrame: (frame) => set({ currentFrame: frame }),
 }));

@@ -33,6 +33,7 @@ export const LiveResultCard: React.FC<LiveResultCardProps> = ({
     const [displayedText, setDisplayedText] = useState('');
     const [isTyping, setIsTyping] = useState(false);
     const pulseAnim = React.useRef(new Animated.Value(0.3)).current;
+    const pulseLoopRef = React.useRef<Animated.CompositeAnimation | null>(null);
 
     // Typewriter effect
     useEffect(() => {
@@ -61,16 +62,25 @@ export const LiveResultCard: React.FC<LiveResultCardProps> = ({
 
     // Pulse animation for generating state
     useEffect(() => {
+        pulseLoopRef.current?.stop();
+        pulseLoopRef.current = null;
+
         if (generating) {
-            Animated.loop(
+            const loop = Animated.loop(
                 Animated.sequence([
                     Animated.timing(pulseAnim, { toValue: 1, duration: 800, useNativeDriver: true }),
                     Animated.timing(pulseAnim, { toValue: 0.3, duration: 800, useNativeDriver: true }),
                 ])
-            ).start();
+            );
+            pulseLoopRef.current = loop;
+            loop.start();
         } else {
             pulseAnim.setValue(0.3);
         }
+        return () => {
+            pulseLoopRef.current?.stop();
+            pulseLoopRef.current = null;
+        };
     }, [generating, pulseAnim]);
 
     return (

@@ -241,10 +241,19 @@ export const breathingCoach = new BreathingCoach();
 // HOOK
 // =============================================================================
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 
 export function useCoaching() {
     const [currentMessage, setCurrentMessage] = useState<CoachingMessage | null>(null);
+    const clearTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    useEffect(() => {
+        return () => {
+            if (clearTimerRef.current) {
+                clearTimeout(clearTimerRef.current);
+            }
+        };
+    }, []);
 
     const updateContext = useCallback((context: CoachingContext) => {
         const message = breathingCoach.getCoachingMessage(context);
@@ -252,7 +261,10 @@ export function useCoaching() {
             setCurrentMessage(message);
 
             // Auto-clear after 5 seconds
-            setTimeout(() => setCurrentMessage(null), 5000);
+            if (clearTimerRef.current) {
+                clearTimeout(clearTimerRef.current);
+            }
+            clearTimerRef.current = setTimeout(() => setCurrentMessage(null), 5000);
         }
     }, []);
 
