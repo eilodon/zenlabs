@@ -5,15 +5,12 @@
  * Uses either MockRuntime (dev) or NativeRuntime (production).
  * 
  * NOW WITH CAMERA INTEGRATION for real heart rate detection!
- * ADDED: Voice guidance support for phase instructions.
  */
 
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { useZenOneStore } from '../stores/zenoneStore';
-import { useSettingsStore } from '../stores/settingsStore';
 import { getRuntime, type IZenOneRuntime, type FfiBreathPattern } from '../sdk';
 import { useCamera, type CameraFrame } from './useCamera';
-import { voiceGuidance } from '../services/voiceGuidance';
 import * as Haptics from 'expo-haptics';
 
 // Frame update interval (16ms ≈ 60fps)
@@ -33,9 +30,6 @@ export function useZenOne(options: UseZenOneOptions = {}) {
         updateFrame,
     } = useZenOneStore();
 
-    // Voice settings
-    const { voiceMode, language, hapticEnabled } = useSettingsStore();
-
     // SDK Runtime instance
     const runtimeRef = useRef<IZenOneRuntime | null>(null);
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -44,18 +38,6 @@ export function useZenOne(options: UseZenOneOptions = {}) {
     // Camera frame buffer for heart rate calculation
     const frameBufferRef = useRef<CameraFrame[]>([]);
     const [cameraReady, setCameraReady] = useState(false);
-
-    // Configure voice guidance when settings change
-    useEffect(() => {
-        voiceGuidance.configure({ mode: voiceMode, language });
-    }, [voiceMode, language]);
-
-    // Reset voice guidance when session ends
-    useEffect(() => {
-        if (!isSessionActive) {
-            voiceGuidance.reset();
-        }
-    }, [isSessionActive]);
 
     // Camera integration
     const handleCameraFrame = useCallback((frame: CameraFrame) => {
@@ -112,27 +94,22 @@ export function useZenOne(options: UseZenOneOptions = {}) {
         // Call SDK processFrame with real camera data
         const frame = runtimeRef.current.processFrame(r, g, b, timestampUs);
 
-        // Handle phase change - Haptics + Voice
+        // Haptic feedback on phase change
         if (frame.phase !== lastPhaseRef.current) {
             lastPhaseRef.current = frame.phase;
 
-            // Voice guidance (async, fire-and-forget)
-            voiceGuidance.speakPhase(frame.phase as any).catch(() => { });
-
-            // Haptic feedback on phase change
-            if (hapticEnabled) {
-                switch (frame.phase) {
-                    case 'Inhale':
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => { });
-                        break;
-                    case 'Exhale':
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => { });
-                        break;
-                    case 'HoldIn':
-                    case 'HoldOut':
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => { });
-                        break;
-                }
+            // Different haptic patterns for different phases
+            switch (frame.phase) {
+                case 'Inhale':
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => { });
+                    break;
+                case 'Exhale':
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => { });
+                    break;
+                case 'HoldIn':
+                case 'HoldOut':
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => { });
+                    break;
             }
         }
 

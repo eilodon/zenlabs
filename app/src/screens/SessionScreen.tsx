@@ -4,20 +4,20 @@
  * NOW WITH CAMERA INTEGRATION and SESSION PERSISTENCE!
  */
 
-import React, { useCallback, useRef, useEffect } from 'react';
+import React, { useCallback, useRef } from 'react';
 import {
     View,
     Text,
     StyleSheet,
     TouchableOpacity,
-    SafeAreaView,
 } from 'react-native';
-import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
-import { BreathCircle, PatternPicker, VitalsDisplay, Timer } from '../components';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { GlowOrb, PatternPicker, VitalsDisplay, Timer } from '../components';
 import { useZenOneStore } from '../stores/zenoneStore';
 import { useSettingsStore } from '../stores/settingsStore';
 import { useSessionStore } from '../stores/sessionStore';
 import { useZenOne } from '../hooks/useZenOne';
+
 
 const PHASE_LABELS: Record<string, string> = {
     Inhale: 'Breathe In',
@@ -53,20 +53,6 @@ export const SessionScreen: React.FC = () => {
 
     const sessionTimeRef = useRef(0);
     const avgSignalQualityRef = useRef<number[]>([]);
-
-    // Keep screen awake during active session
-    useEffect(() => {
-        if (isSessionActive) {
-            activateKeepAwakeAsync('session').catch(() => { });
-        } else {
-            deactivateKeepAwake('session');
-        }
-
-        return () => {
-            deactivateKeepAwake('session');
-        };
-    }, [isSessionActive]);
-
 
     const handleStartStop = useCallback(() => {
         if (isSessionActive) {
@@ -140,18 +126,26 @@ export const SessionScreen: React.FC = () => {
 
             {/* Main Circle */}
             <View style={styles.circleContainer}>
-                <BreathCircle
+                <GlowOrb
                     phase={currentFrame.phase}
                     progress={currentFrame.phaseProgress}
-                    size={280}
+                    size={360}
+                    heartRate={currentFrame.heartRate}
+                    signalQuality={currentFrame.signalQuality}
                 />
-                <Text style={styles.phaseLabel}>
-                    {PHASE_LABELS[currentFrame.phase] || currentFrame.phase}
-                </Text>
-                <Text style={styles.phaseInstruction}>
-                    {PHASE_INSTRUCTIONS[currentFrame.phase] || ''}
-                </Text>
             </View>
+
+            {/* Phase Text (during session) */}
+            {isSessionActive && (
+                <View style={styles.phaseContainer}>
+                    <Text style={styles.phaseLabel}>
+                        {PHASE_LABELS[currentFrame.phase] || currentFrame.phase}
+                    </Text>
+                    <Text style={styles.phaseInstruction}>
+                        {PHASE_INSTRUCTIONS[currentFrame.phase] || ''}
+                    </Text>
+                </View>
+            )}
 
             {/* Vitals Display */}
             <VitalsDisplay
@@ -163,7 +157,6 @@ export const SessionScreen: React.FC = () => {
             {/* Pattern Picker (only when not in session) */}
             {!isSessionActive && patterns.length > 0 && (
                 <View style={styles.pickerContainer}>
-                    <Text style={styles.sectionTitle}>Choose Pattern</Text>
                     <PatternPicker
                         patterns={patterns}
                         selectedId={selectedPatternId}
@@ -176,11 +169,19 @@ export const SessionScreen: React.FC = () => {
             <TouchableOpacity
                 style={[styles.button, isSessionActive && styles.stopButton]}
                 onPress={handleStartStop}
-                activeOpacity={0.8}
+                activeOpacity={0.85}
             >
-                <Text style={styles.buttonText}>
-                    {isSessionActive ? '⏹ End Session' : '▶️ Start Session'}
-                </Text>
+                <View style={styles.buttonInner}>
+                    <Text style={[styles.buttonIcon, isSessionActive && styles.stopButtonIcon]}>
+                        {isSessionActive ? '⏹' : '▶'}
+                    </Text>
+                    <Text style={[styles.buttonText, isSessionActive && styles.stopButtonText]}>
+                        {isSessionActive ? 'END SESSION' : 'START BREATHING'}
+                    </Text>
+                    {!isSessionActive && (
+                        <Text style={styles.buttonArrow}>›</Text>
+                    )}
+                </View>
             </TouchableOpacity>
 
             {/* Session Stats (after session ends) */}
@@ -214,7 +215,7 @@ export const SessionScreen: React.FC = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#1A1A2E',
+        backgroundColor: '#0D0D12',
     },
     header: {
         flexDirection: 'row',
@@ -259,17 +260,21 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+        maxHeight: 420,
+    },
+    phaseContainer: {
+        alignItems: 'center',
+        paddingVertical: 8,
     },
     phaseLabel: {
         color: '#fff',
-        fontSize: 28,
+        fontSize: 22,
         fontWeight: '600',
-        marginTop: 24,
     },
     phaseInstruction: {
-        color: '#888',
-        fontSize: 16,
-        marginTop: 8,
+        color: '#555',
+        fontSize: 13,
+        marginTop: 4,
     },
     pickerContainer: {
         marginBottom: 16,
@@ -283,26 +288,49 @@ const styles = StyleSheet.create({
         letterSpacing: 1,
     },
     button: {
-        backgroundColor: '#4ECDC4',
+        backgroundColor: '#FAFAFA',
         marginHorizontal: 20,
-        marginBottom: 24,
-        paddingVertical: 18,
-        borderRadius: 16,
-        alignItems: 'center',
-        shadowColor: '#4ECDC4',
+        marginBottom: 12,
+        paddingVertical: 14,
+        paddingHorizontal: 24,
+        borderRadius: 14,
+        shadowColor: '#000',
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 4,
+        shadowOpacity: 0.15,
+        shadowRadius: 12,
+        elevation: 5,
+    },
+    buttonInner: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    buttonIcon: {
+        fontSize: 16,
+        marginRight: 10,
+        color: '#1A1A2E',
+    },
+    stopButtonIcon: {
+        color: '#fff',
     },
     stopButton: {
-        backgroundColor: '#FF6B6B',
-        shadowColor: '#FF6B6B',
+        backgroundColor: '#FF4D4D',
     },
     buttonText: {
+        color: '#1A1A2E',
+        fontSize: 15,
+        fontWeight: '700',
+        letterSpacing: 1,
+        textTransform: 'uppercase',
+    },
+    stopButtonText: {
         color: '#fff',
-        fontSize: 18,
-        fontWeight: 'bold',
+    },
+    buttonArrow: {
+        fontSize: 22,
+        color: '#888',
+        marginLeft: 10,
+        fontWeight: '300',
     },
     statsCard: {
         backgroundColor: '#2A2A3E',

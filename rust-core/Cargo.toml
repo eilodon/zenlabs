@@ -16,6 +16,7 @@ zenb-signals = { path = "../../AGOLOS/crates/zenb-signals" }
 
 # UniFFI for cross-platform bindings
 uniffi = { version = "0.28", features = ["cli"] }
+thiserror = "1.0"
 
 [build-dependencies]
 uniffi = { version = "0.28", features = ["build"] }

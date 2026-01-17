@@ -14,3 +14,4 @@ export { KineticSnackbar } from './KineticSnackbar';
 export type { KineticSnackbarProps, SnackbarKind } from './KineticSnackbar';
 export { GestureBottomSheet } from './GestureBottomSheet';
 export type { GestureBottomSheetProps } from './GestureBottomSheet';
+export { HintChip } from './HintChip';

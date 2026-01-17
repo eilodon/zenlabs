@@ -13,11 +13,24 @@ use std::time::Instant;
 uniffi::include_scaffolding!("zenone");
 
 // ============================================================================
+// UniFFI ERROR TYPE (matches src/zenone.udl)
+// ============================================================================
+
+#[derive(Debug, thiserror::Error)]
+pub enum ZenOneError {
+    #[error("pattern not found")]
+    PatternNotFound,
+
+    #[error("session not active")]
+    SessionNotActive,
+}
+
+// ============================================================================
 // FFI-SAFE TYPES
 // ============================================================================
 
 /// Breathing pattern info (FFI-safe)
-#[derive(Debug, Clone, uniffi::Record)]
+#[derive(Debug, Clone)]
 pub struct FfiBreathPattern {
     pub id: String,
     pub label: String,
@@ -49,7 +62,7 @@ impl From<&BreathPattern> for FfiBreathPattern {
 }
 
 /// Current phase (FFI-safe enum)
-#[derive(Debug, Clone, Copy, PartialEq, Eq, uniffi::Enum)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FfiPhase {
     Inhale,
     HoldIn,
@@ -69,7 +82,7 @@ impl From<Phase> for FfiPhase {
 }
 
 /// Frame result from process_frame
-#[derive(Debug, Clone, uniffi::Record)]
+#[derive(Debug, Clone)]
 pub struct FfiFrame {
     pub phase: FfiPhase,
     pub phase_progress: f32,
@@ -79,7 +92,7 @@ pub struct FfiFrame {
 }
 
 /// Session statistics
-#[derive(Debug, Clone, uniffi::Record)]
+#[derive(Debug, Clone)]
 pub struct FfiSessionStats {
     pub duration_sec: f32,
     pub cycles_completed: u64,
@@ -92,7 +105,6 @@ pub struct FfiSessionStats {
 // ============================================================================
 
 /// ZenOne Runtime - Main API for native apps
-#[derive(uniffi::Object)]
 pub struct ZenOneRuntime {
     inner: Mutex<RuntimeInner>,
 }
@@ -111,16 +123,13 @@ struct SessionState {
     hr_samples: Vec<f32>,
 }
 
-#[uniffi::export]
 impl ZenOneRuntime {
     /// Create a new runtime with default pattern (4-7-8)
-    #[uniffi::constructor]
     pub fn new() -> Self {
         Self::with_pattern("4-7-8".to_string())
     }
     
     /// Create with specific pattern
-    #[uniffi::constructor]
     pub fn with_pattern(pattern_id: String) -> Self {
         let patterns = builtin_patterns();
         let pattern = patterns.get(&pattern_id)
@@ -188,7 +197,7 @@ impl ZenOneRuntime {
         }
         
         FfiFrame {
-            phase: FfiPhase::from(inner.phase_machine.phase),
+            phase: FfiPhase::from(inner.phase_machine.phase.clone()),
             phase_progress: inner.phase_machine.cycle_phase_norm(),
             cycles_completed: inner.phase_machine.cycle_index,
             heart_rate: ppg_result.as_ref().map(|r| r.bpm),

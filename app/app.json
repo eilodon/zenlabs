@@ -1,44 +1,6 @@
 {
-  "expo": {
-    "name": "ZenOne",
-    "slug": "zenone",
-    "version": "1.0.0",
-    "orientation": "portrait",
-    "icon": "./assets/icon.png",
-    "userInterfaceStyle": "dark",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#1A1A2E"
-    },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
-    "ios": {
-      "supportsTablet": false,
-      "bundleIdentifier": "com.zenone.breathe"
-    },
-    "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#1A1A2E"
-      },
-      "package": "com.zenone.breathe",
-      "versionCode": 1,
-      "permissions": [
-        "android.permission.CAMERA",
-        "android.permission.VIBRATE",
-        "android.permission.INTERNET"
-      ]
-    },
-    "plugins": [],
-    "updates": {
-      "enabled": false
-    },
-    "extra": {
-      "eas": {
-        "projectId": "zenone-breathe"
-      }
-    }
-  }
+  "plugins": [
+    "expo-secure-store",
+    "expo-web-browser"
+  ]
 }

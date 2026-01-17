@@ -97,6 +97,38 @@ android {
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
     }
+    def allowDebugSigningInRelease = (findProperty('zenone.allowDebugSigningInRelease') ?: 'false').toBoolean()
+    def isReleaseTask = gradle.startParameter.taskNames.any { it.toLowerCase().contains('release') }
+
+    def releaseStoreFile = (
+            project.findProperty('android.injected.signing.store.file') ?:
+                    project.findProperty('ZENONE_UPLOAD_STORE_FILE') ?:
+                            project.findProperty('MYAPP_UPLOAD_STORE_FILE')
+    )?.toString()
+    def releaseStorePassword = (
+            project.findProperty('android.injected.signing.store.password') ?:
+                    project.findProperty('ZENONE_UPLOAD_STORE_PASSWORD') ?:
+                            project.findProperty('MYAPP_UPLOAD_STORE_PASSWORD')
+    )?.toString()
+    def releaseKeyAlias = (
+            project.findProperty('android.injected.signing.key.alias') ?:
+                    project.findProperty('ZENONE_UPLOAD_KEY_ALIAS') ?:
+                            project.findProperty('MYAPP_UPLOAD_KEY_ALIAS')
+    )?.toString()
+    def releaseKeyPassword = (
+            project.findProperty('android.injected.signing.key.password') ?:
+                    project.findProperty('ZENONE_UPLOAD_KEY_PASSWORD') ?:
+                            project.findProperty('MYAPP_UPLOAD_KEY_PASSWORD')
+    )?.toString()
+    def hasReleaseSigning = releaseStoreFile && releaseStorePassword && releaseKeyAlias && releaseKeyPassword
+
+    if (isReleaseTask && !hasReleaseSigning && !allowDebugSigningInRelease) {
+        throw new GradleException(
+                "Release signing is not configured. Set ZENONE_UPLOAD_STORE_FILE/… (or MYAPP_UPLOAD_STORE_FILE/…) " +
+                        "in gradle.properties, or pass -Pzenone.allowDebugSigningInRelease=true for local testing only."
+        )
+    }
+
     signingConfigs {
         debug {
             storeFile file('debug.keystore')
@@ -104,15 +136,25 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        release {
+            if (hasReleaseSigning) {
+                storeFile file(releaseStoreFile)
+                storePassword releaseStorePassword
+                keyAlias releaseKeyAlias
+                keyPassword releaseKeyPassword
+            }
+        }
     }
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
         }
         release {
-            // Caution! In production, you need to generate your own keystore file.
-            // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig signingConfigs.debug
+            if (hasReleaseSigning) {
+                signingConfig signingConfigs.release
+            } else if (allowDebugSigningInRelease) {
+                signingConfig signingConfigs.debug
+            }
             def enableShrinkResources = findProperty('android.enableShrinkResourcesInReleaseBuilds') ?: 'false'
             shrinkResources enableShrinkResources.toBoolean()
             minifyEnabled enableMinifyInReleaseBuilds

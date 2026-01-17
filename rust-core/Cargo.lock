@@ -1640,6 +1640,7 @@ dependencies = [
 name = "zenone-ffi"
 version = "0.1.0"
 dependencies = [
+ "thiserror",
  "uniffi",
  "zenb-core",
  "zenb-signals",

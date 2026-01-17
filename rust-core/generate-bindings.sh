@@ -28,13 +28,13 @@ fi
 
 echo "📱 Generating Swift bindings..."
 mkdir -p "$IOS_OUT"
-uniffi-bindgen generate zenone.udl --language swift --out-dir "$IOS_OUT" || \
-    cargo run --features uniffi/cli --bin uniffi-bindgen generate zenone.udl --language swift --out-dir "$IOS_OUT"
+uniffi-bindgen generate src/zenone.udl --language swift --out-dir "$IOS_OUT" || \
+    cargo run --features uniffi/cli --bin uniffi-bindgen generate src/zenone.udl --language swift --out-dir "$IOS_OUT"
 
 echo "🤖 Generating Kotlin bindings..."
 mkdir -p "$ANDROID_OUT"
-uniffi-bindgen generate zenone.udl --language kotlin --out-dir "$ANDROID_OUT" || \
-    cargo run --features uniffi/cli --bin uniffi-bindgen generate zenone.udl --language kotlin --out-dir "$ANDROID_OUT"
+uniffi-bindgen generate src/zenone.udl --language kotlin --out-dir "$ANDROID_OUT" || \
+    cargo run --features uniffi/cli --bin uniffi-bindgen generate src/zenone.udl --language kotlin --out-dir "$ANDROID_OUT"
 
 echo ""
 echo "✅ Bindings generated!"
