@@ -4,6 +4,7 @@
 
 import React, { useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Share, Platform } from 'react-native';
+import { logger } from '../utils/logger';
 
 interface ShareCardProps {
     sessionData: {
@@ -30,7 +31,7 @@ export const ShareCard: React.FC<ShareCardProps> = ({ sessionData, onClose }) =>
                 title: 'My ZenOne Session',
             });
         } catch (error) {
-            console.error('Share failed:', error);
+            logger.error('Share failed:', error);
         }
     };
 

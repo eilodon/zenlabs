@@ -21,6 +21,7 @@ import { ErrorBoundary } from './components';
 import { StatusBar, Text } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuthStore } from './stores/authStore';
+import { logger } from './utils/logger';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -105,7 +106,7 @@ function AppContent() {
                 setShowLogin(true);
             }
         } catch (error) {
-            console.error('Init error:', error);
+            logger.error('Init error:', error);
         }
         setIsLoading(false);
     };

@@ -4,6 +4,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Camera } from 'expo-camera';
+import { logger } from '../utils/logger';
 
 // =============================================================================
 // TYPES
@@ -69,7 +70,7 @@ export function useCamera(options: UseCameraOptions): UseCameraReturn {
             setHasPermission(granted);
             return granted;
         } catch (error) {
-            console.error('Camera permission error:', error);
+            logger.error('Camera permission error:', error);
             setHasPermission(false);
             return false;
         }

@@ -5,6 +5,7 @@
 
 import React, { Component, type ReactNode } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { logger } from '../utils/logger';
 
 interface Props {
     children: ReactNode;
@@ -28,7 +29,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
     componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
         // Log to error tracking service (e.g., Sentry)
-        console.error('ErrorBoundary caught:', error, errorInfo);
+        logger.error('ErrorBoundary caught:', error, errorInfo);
     }
 
     handleRetry = () => {

@@ -9,6 +9,7 @@
 
 import * as Speech from 'expo-speech';
 import { Language, TRANSLATIONS } from '../i18n/translations';
+import { logger } from '../utils/logger';
 
 export type VoiceMode = 'voice' | 'counting' | 'off';
 
@@ -104,7 +105,7 @@ class VoiceGuidanceService {
                 volume: this.options.volume,
             });
         } catch (error) {
-            console.warn('Voice guidance error:', error);
+            logger.warn('Voice guidance error:', error);
         }
     }
 

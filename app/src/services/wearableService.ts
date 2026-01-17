@@ -8,6 +8,9 @@
  * - Garmin (Connect IQ)
  */
 
+import { useCallback, useEffect, useState } from 'react';
+import { logger } from '../utils/logger';
+
 // =============================================================================
 // TYPES
 // =============================================================================
@@ -166,7 +169,7 @@ class XiaomiWearableService {
         try {
             // In production, this would call Zepp API
             // POST https://auth.zepp.com/oauth/token
-            console.log('🔗 Exchanging Zepp auth code...');
+            logger.info('🔗 Exchanging Zepp auth code...');
 
             // Mock successful auth
             this.tokens = {
@@ -177,7 +180,7 @@ class XiaomiWearableService {
 
             return true;
         } catch (error) {
-            console.error('Zepp auth failed:', error);
+            logger.error('Zepp auth failed:', error);
             return false;
         }
     }
@@ -195,7 +198,7 @@ class XiaomiWearableService {
             // Mock heart rate data
             return 62 + Math.random() * 10;
         } catch (error) {
-            console.error('Failed to fetch Xiaomi HR:', error);
+            logger.error('Failed to fetch Xiaomi HR:', error);
             return null;
         }
     }
@@ -247,7 +250,7 @@ class AppleWatchService {
         // import AppleHealthKit from 'react-native-health';
         // await AppleHealthKit.initHealthKit(permissions);
 
-        console.log('🍎 Requesting HealthKit authorization...');
+        logger.info('🍎 Requesting HealthKit authorization...');
         this.isAuthorized = true; // Mock
         return true;
     }
@@ -280,7 +283,7 @@ class AppleWatchService {
      * Start real-time heart rate streaming
      */
     startStreaming(callback: (hr: number) => void): () => void {
-        console.log('⌚ Starting Apple Watch HR stream...');
+        logger.info('⌚ Starting Apple Watch HR stream...');
 
         const interval = setInterval(() => {
             const hr = 65 + Math.random() * 8;
@@ -329,7 +332,7 @@ class WearableService {
                 return await this.appleService.requestAuthorization();
             case 'xiaomi':
                 // Would trigger OAuth flow
-                console.log('📿 Xiaomi connection requires OAuth flow');
+                logger.info('📿 Xiaomi connection requires OAuth flow');
                 return true; // Mock
             default:
                 return false;
@@ -412,8 +415,6 @@ export const wearableService = new WearableService();
 // =============================================================================
 // HOOK FOR REACT COMPONENTS
 // =============================================================================
-
-import { useState, useEffect, useCallback } from 'react';
 
 export function useWearable() {
     const [provider, setProviderState] = useState<WearableProvider>(wearableService.getProvider());

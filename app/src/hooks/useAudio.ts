@@ -7,6 +7,7 @@
 import { useRef, useCallback, useEffect, useState } from 'react';
 import { Audio } from 'expo-av';
 import type { FfiPhase } from '../sdk';
+import { logger } from '../utils/logger';
 
 // =============================================================================
 // TYPES
@@ -124,7 +125,7 @@ class ToneGenerator {
                 shouldDuckAndroid: true,
             });
         } catch (e) {
-            console.warn('Audio setup failed:', e);
+            logger.warn('Audio setup failed:', e);
         }
     }
 
@@ -140,13 +141,13 @@ class ToneGenerator {
 
         // Log what would be played
         // In production: load and play actual audio files
-        console.log(`🎵 Playing ${phase}: ${config.frequency}Hz at ${config.volume * this.volume * 100}%`);
+        logger.info(`🎵 Playing ${phase}: ${config.frequency}Hz at ${config.volume * this.volume * 100}%`);
     }
 
     stop() {
         this.isPlaying = false;
         this.currentPhase = null;
-        console.log('🔇 Audio stopped');
+        logger.info('🔇 Audio stopped');
     }
 
     setVolume(vol: number) {
@@ -172,13 +173,13 @@ class BinauralGenerator {
         this.isPlaying = true;
 
         const config = BINAURAL_PRESETS[preset];
-        console.log(`🧠 Binaural beats: ${config.beatFreq}Hz (${preset})`);
-        console.log(`   Left: ${config.baseFreq}Hz, Right: ${config.baseFreq + config.beatFreq}Hz`);
+        logger.info(`🧠 Binaural beats: ${config.beatFreq}Hz (${preset})`);
+        logger.info(`   Left: ${config.baseFreq}Hz, Right: ${config.baseFreq + config.beatFreq}Hz`);
     }
 
     stop() {
         this.isPlaying = false;
-        console.log('🧠 Binaural stopped');
+        logger.info('🧠 Binaural stopped');
     }
 
     setPreset(preset: BinauralPreset) {

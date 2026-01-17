@@ -75,6 +75,71 @@ describe('sessionStore', () => {
         });
     });
 
+    describe('streaks', () => {
+        beforeEach(() => {
+            jest.useFakeTimers();
+            jest.setSystemTime(new Date('2024-01-10T12:00:00.000Z'));
+        });
+
+        afterEach(() => {
+            jest.useRealTimers();
+        });
+
+        it('should continue streak on consecutive days', () => {
+            useSessionStore.setState({
+                sessions: [],
+                streak: {
+                    currentStreak: 3,
+                    longestStreak: 3,
+                    lastSessionDate: '2024-01-09T08:00:00.000Z',
+                },
+                weeklyGoal: 7,
+                weeklyProgress: 0,
+            });
+
+            useSessionStore.getState().addSession({
+                date: new Date().toISOString(),
+                patternId: 'box',
+                patternLabel: 'Box',
+                durationSec: 60,
+                cyclesCompleted: 1,
+                avgHeartRate: null,
+                avgSignalQuality: 0,
+            });
+
+            const { streak } = useSessionStore.getState();
+            expect(streak.currentStreak).toBe(4);
+            expect(streak.longestStreak).toBe(4);
+        });
+
+        it('should preserve longest streak after a break', () => {
+            useSessionStore.setState({
+                sessions: [],
+                streak: {
+                    currentStreak: 1,
+                    longestStreak: 10,
+                    lastSessionDate: '2024-01-09T08:00:00.000Z',
+                },
+                weeklyGoal: 7,
+                weeklyProgress: 0,
+            });
+
+            useSessionStore.getState().addSession({
+                date: new Date().toISOString(),
+                patternId: 'box',
+                patternLabel: 'Box',
+                durationSec: 60,
+                cyclesCompleted: 1,
+                avgHeartRate: null,
+                avgSignalQuality: 0,
+            });
+
+            const { streak } = useSessionStore.getState();
+            expect(streak.currentStreak).toBe(2);
+            expect(streak.longestStreak).toBe(10);
+        });
+    });
+
     describe('getInsights', () => {
         it('should return empty insights when no sessions', () => {
             const insights = useSessionStore.getState().getInsights();

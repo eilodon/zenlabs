@@ -6,6 +6,7 @@
  */
 
 import * as Haptics from 'expo-haptics';
+import { logger } from './logger';
 
 export type HapticType = 'success' | 'warning' | 'error' | 'selection' | 'light' | 'medium' | 'heavy';
 
@@ -47,7 +48,7 @@ export const haptic = async (type: HapticType = 'selection'): Promise<void> => {
         }
     } catch (error) {
         // Silently fail if haptics not available
-        console.debug('[Haptics] Not available:', error);
+        logger.debug('[Haptics] Not available:', error);
     }
 };
 

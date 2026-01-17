@@ -14,6 +14,8 @@
  * - Franklin et al. (2015): "Feedback Control of Dynamic Systems"
  */
 
+import { logger } from '../utils/logger';
+
 export interface PIDConfig {
     Kp: number;  // Proportional gain
     Ki: number;  // Integral gain
@@ -64,7 +66,7 @@ export class PIDController {
     compute(error: number, dt: number): number {
         // Guard against invalid dt
         if (dt <= 0 || !isFinite(dt)) {
-            console.warn('[PID] Invalid dt:', dt);
+            logger.warn('[PID] Invalid dt:', dt);
             return 0;
         }
 

@@ -13,6 +13,7 @@ import * as Google from 'expo-auth-session/providers/google';
 import * as WebBrowser from 'expo-web-browser';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
+import { logger } from '../utils/logger';
 
 // Complete auth session for web
 WebBrowser.maybeCompleteAuthSession();
@@ -73,7 +74,7 @@ async function secureStore(key: string, value: string): Promise<void> {
             await SecureStore.setItemAsync(key, value);
         }
     } catch (error) {
-        console.error('SecureStore error:', error);
+        logger.error('SecureStore error:', error);
     }
 }
 
@@ -84,7 +85,7 @@ async function secureRetrieve(key: string): Promise<string | null> {
         }
         return await SecureStore.getItemAsync(key);
     } catch (error) {
-        console.error('SecureRetrieve error:', error);
+        logger.error('SecureRetrieve error:', error);
         return null;
     }
 }
@@ -97,7 +98,7 @@ async function secureDelete(key: string): Promise<void> {
             await SecureStore.deleteItemAsync(key);
         }
     } catch (error) {
-        console.error('SecureDelete error:', error);
+        logger.error('SecureDelete error:', error);
     }
 }
 
@@ -125,7 +126,7 @@ class AuthService {
                 return true;
             }
         } catch (error) {
-            console.error('Auth init error:', error);
+            logger.error('Auth init error:', error);
         }
         return false;
     }
@@ -166,10 +167,10 @@ class AuthService {
             this.accessToken = accessToken;
             this.notifyListeners();
 
-            console.log('✅ Google Sign-In successful');
+            logger.info('✅ Google Sign-In successful');
             return user;
         } catch (error) {
-            console.error('Google auth error:', error);
+            logger.error('Google auth error:', error);
             return null;
         }
     }
@@ -328,11 +329,11 @@ export interface SessionSyncData {
 
 export async function syncUserData(data: SessionSyncData): Promise<boolean> {
     if (!authService.hasFullAccount()) {
-        console.log('⚠️ Data sync requires Google account');
+        logger.warn('⚠️ Data sync requires Google account');
         return false;
     }
 
     // In production: POST to your backend
-    console.log('📤 Would sync data:', data);
+    logger.info('📤 Would sync data:', data);
     return true;
 }

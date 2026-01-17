@@ -7,6 +7,7 @@
 
 import { MockRuntime } from './MockRuntime';
 import type { IZenOneRuntime, RuntimeProvider, FfiBreathPattern, FfiFrame, FfiPhase, FfiSessionStats } from './ZenOneSDK';
+import { logger } from '../utils/logger';
 
 // Re-export types
 export type { IZenOneRuntime, FfiBreathPattern, FfiFrame, FfiPhase, FfiSessionStats, RuntimeProvider };
@@ -33,7 +34,7 @@ export function getRuntime(
                 // TODO: When UniFFI bindings are ready, use them here
                 // import { ZenOneRuntime } from 'zenone-native';
                 // runtimeInstance = new ZenOneRuntime(patternId);
-                console.warn('[ZenOneSDK] Native runtime not available, falling back to mock');
+                logger.warn('[ZenOneSDK] Native runtime not available, falling back to mock');
                 runtimeInstance = new MockRuntime(patternId);
                 break;
             case 'mock':
@@ -64,7 +65,7 @@ export function createRuntime(
 ): IZenOneRuntime {
     switch (provider) {
         case 'native':
-            console.warn('[ZenOneSDK] Native runtime not available, using mock');
+            logger.warn('[ZenOneSDK] Native runtime not available, using mock');
             return new MockRuntime(patternId);
         case 'mock':
         default:

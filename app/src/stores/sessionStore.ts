@@ -81,16 +81,21 @@ function isThisWeek(dateStr: string): boolean {
     return date >= startOfWeek;
 }
 
-function calculateStreak(sessions: SessionRecord[], lastSessionDate: string | null, currentStreak: number): StreakData {
+function calculateStreak(
+    sessions: SessionRecord[],
+    lastSessionDate: string | null,
+    currentStreak: number,
+    longestStreak: number
+): StreakData {
     const today = new Date().toISOString();
 
     if (!lastSessionDate) {
-        return { currentStreak: 1, longestStreak: 1, lastSessionDate: today };
+        return { currentStreak: 1, longestStreak: Math.max(longestStreak, 1), lastSessionDate: today };
     }
 
     if (isSameDay(lastSessionDate, today)) {
         // Same day, streak unchanged
-        return { currentStreak, longestStreak: Math.max(currentStreak, 1), lastSessionDate: today };
+        return { currentStreak, longestStreak: Math.max(longestStreak, currentStreak, 1), lastSessionDate: today };
     }
 
     if (isYesterday(lastSessionDate)) {
@@ -98,13 +103,13 @@ function calculateStreak(sessions: SessionRecord[], lastSessionDate: string | nu
         const newStreak = currentStreak + 1;
         return {
             currentStreak: newStreak,
-            longestStreak: Math.max(newStreak, currentStreak),
+            longestStreak: Math.max(longestStreak, newStreak),
             lastSessionDate: today
         };
     }
 
     // Streak broken, start over
-    return { currentStreak: 1, longestStreak: Math.max(currentStreak, 1), lastSessionDate: today };
+    return { currentStreak: 1, longestStreak: Math.max(longestStreak, 1), lastSessionDate: today };
 }
 
 // =============================================================================
@@ -137,7 +142,8 @@ export const useSessionStore = create<SessionState>()(
                 const newStreak = calculateStreak(
                     newSessions,
                     state.streak.lastSessionDate,
-                    state.streak.currentStreak
+                    state.streak.currentStreak,
+                    state.streak.longestStreak
                 );
 
                 // Update weekly progress
