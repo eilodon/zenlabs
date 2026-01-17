@@ -28,7 +28,8 @@ export const RhythmBar: React.FC<RhythmBarProps> = ({
     const total = inhale + holdIn + exhale + holdOut;
     if (total === 0) return null;
 
-    const getWidth = (val: number) => `${(val / total) * 100}%`;
+    // Use flex instead of percentage width for proper typing
+    const getFlex = (val: number) => val / total;
 
     return (
         <View style={[styles.container, { height }]}>
@@ -36,7 +37,7 @@ export const RhythmBar: React.FC<RhythmBarProps> = ({
             <View
                 style={[
                     styles.segment,
-                    { width: getWidth(inhale), backgroundColor: accentColor },
+                    { flex: getFlex(inhale), backgroundColor: accentColor },
                 ]}
             />
 
@@ -45,7 +46,7 @@ export const RhythmBar: React.FC<RhythmBarProps> = ({
                 <View
                     style={[
                         styles.segment,
-                        { width: getWidth(holdIn), backgroundColor: 'rgba(255,255,255,0.2)' },
+                        { flex: getFlex(holdIn), backgroundColor: 'rgba(255,255,255,0.2)' },
                     ]}
                 />
             )}
@@ -54,7 +55,7 @@ export const RhythmBar: React.FC<RhythmBarProps> = ({
             <View
                 style={[
                     styles.segment,
-                    { width: getWidth(exhale), backgroundColor: accentColor, opacity: 0.6 },
+                    { flex: getFlex(exhale), backgroundColor: accentColor, opacity: 0.6 },
                 ]}
             />
 
@@ -63,7 +64,7 @@ export const RhythmBar: React.FC<RhythmBarProps> = ({
                 <View
                     style={[
                         styles.segment,
-                        { width: getWidth(holdOut), backgroundColor: 'rgba(255,255,255,0.2)' },
+                        { flex: getFlex(holdOut), backgroundColor: 'rgba(255,255,255,0.2)' },
                     ]}
                 />
             )}
