@@ -13,10 +13,11 @@ import {
     useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { GlowOrb, PatternPicker, VitalsDisplay, Timer, SessionManager, SessionComplete } from '../components';
+import { GlowOrb, PatternPicker, VitalsDisplay, Timer, SessionComplete } from '../components';
 import { useZenOneStore } from '../stores/zenoneStore';
 import { useSettingsStore } from '../stores/settingsStore';
 import { useSessionStore } from '../stores/sessionStore';
+import { useZenOne } from '../hooks/useZenOne';
 
 
 const PHASE_LABELS: Record<string, string> = {
@@ -47,10 +48,13 @@ export const SessionScreen: React.FC = () => {
     const selectPattern = useZenOneStore(s => s.selectPattern);
     const startSession = useZenOneStore(s => s.startSession);
     const stopSession = useZenOneStore(s => s.stopSession);
-    const setSessionStats = useZenOneStore(s => s.setSessionStats);
 
     const { cameraEnabled } = useSettingsStore();
     const streak = useSessionStore(s => s.streak);
+    const addSession = useSessionStore(s => s.addSession);
+
+    // ZenOne hook for session management
+    const { getSessionStats } = useZenOne({ cameraEnabled });
 
     const sessionTimeRef = useRef(0);
 
@@ -59,19 +63,39 @@ export const SessionScreen: React.FC = () => {
         sessionTimeRef.current = s;
     }, []);
 
-    // We will initiate stop here, but SessionManager handles the data saving
+    // Handle session start/stop with proper stats collection
     const handleStartStop = useCallback(() => {
-        console.log('SessionScreen: handleStartStop pressed. Current isSessionActive:', isSessionActive);
         if (isSessionActive) {
-            console.log('SessionScreen: Calling stopSession');
-            // Signal stop - SessionManager will detect and save stats
-            stopSession(null as any); // Temporary cast, we will update store types
+            // Get session stats from runtime
+            const stats = getSessionStats();
+            if (stats) {
+                // Find pattern label
+                const pattern = patterns.find(p => p.id === stats.pattern_id);
+
+                // Save to session store
+                addSession({
+                    date: new Date().toISOString(),
+                    patternId: stats.pattern_id,
+                    patternLabel: pattern?.label || stats.pattern_id,
+                    durationSec: stats.duration_sec,
+                    cyclesCompleted: stats.cycles_completed,
+                    avgHeartRate: stats.avg_heart_rate,
+                    avgSignalQuality: currentFrame.signalQuality,
+                });
+
+                // Update UI state with converted stats
+                stopSession({
+                    durationSec: stats.duration_sec,
+                    cyclesCompleted: stats.cycles_completed,
+                    patternId: stats.pattern_id,
+                    avgHeartRate: stats.avg_heart_rate,
+                });
+            }
         } else {
-            console.log('SessionScreen: Calling startSession');
             sessionTimeRef.current = 0;
             startSession();
         }
-    }, [isSessionActive, startSession, stopSession]);
+    }, [isSessionActive, startSession, stopSession, getSessionStats, addSession, patterns, currentFrame]);
 
     // Dynamic layout calculations
     const isLandscape = width > height;
@@ -82,8 +106,6 @@ export const SessionScreen: React.FC = () => {
 
     return (
         <SafeAreaView style={styles.container}>
-            <SessionManager />
-
             {/* Header */}
             <View style={styles.header}>
                 <Text style={styles.title}>ZenOne</Text>
@@ -197,7 +219,7 @@ export const SessionScreen: React.FC = () => {
                             streakDays: streak.currentStreak,
                             // newBadge: undefined // Gamification not linked yet
                         }}
-                        onContinue={() => setSessionStats(null as any)} // Clear stats to close modal
+                        onContinue={() => stopSession({ durationSec: 0, cyclesCompleted: 0, patternId: '', avgHeartRate: null })} // Clear stats to close modal
                     />
                 </View>
             )}
